@@ -264,9 +264,13 @@ class Collection implements \ArrayAccess
      * The each method iterates over the items in the collection and passes each item to a closure
      * https://laravel.com/docs/8.x/collections#method-each
      */
-    public function each()
+    public function each(callable $callback): void
     {
-        // TODO: Implement each() method.
+        foreach ($this->items as $key => $item) {
+            if ($callback($item, $key) === false) {
+                break;
+            }
+        }
     }
 
     /**
@@ -377,7 +381,7 @@ class Collection implements \ArrayAccess
      */
     public function get(int|string|callable $key, mixed $default = null): mixed
     {
-        // TODO: Implement get() method.
+        return $this->items[$key] ?? $default;
     }
 
     /**
@@ -404,9 +408,9 @@ class Collection implements \ArrayAccess
      * If the collection contains arrays or objects, you should pass the key of the attributes you wish to join, and
      * the "glue" string you wish to place between the values
      */
-    public function implode()
+    public function implode(string $separator, int|string|callable|null $key = null): string
     {
-        // TODO: Implement implode() method.
+        return implode($separator, is_null($key) ? $this->items : $this->pluck($key)->all());
     }
 
     /**
@@ -491,7 +495,23 @@ class Collection implements \ArrayAccess
      */
     public function last(callable $test): mixed
     {
-        // TODO: Implement last() method.
+        $last = null;
+        foreach ($this->items as $key => $item) {
+            if ($test($item, $key)) {
+                $last = $item;
+            }
+        }
+
+        return $last;
+    }
+
+    /**
+     * The static make method creates a new collection instance. See the Creating Collections section.
+     * https://laravel.com/docs/8.x/collections#method-make
+     */
+    public static function make(mixed $data): static
+    {
+        return static::wrap($data);
     }
 
     /**
@@ -703,7 +723,8 @@ class Collection implements \ArrayAccess
      */
     public function prepend(mixed $value): static
     {
-        // TODO: Implement prepend() method.
+        $this->items = [$value, ...$this->items];
+        return $this;
     }
 
 
@@ -785,7 +806,11 @@ class Collection implements \ArrayAccess
      */
     public function replace(array $res): static
     {
-        // TODO: Implement replace() method.
+        $result = new static($this->items);
+        foreach ($res as $key => $value) {
+            $result->put($key, $value);
+        }
+        return $result;
     }
 
     /**
@@ -803,7 +828,7 @@ class Collection implements \ArrayAccess
      */
     public function reverse(): static
     {
-        // TODO: Implement reverse() method.
+        return new static(array_reverse($this->items, true));
     }
 
     /**
@@ -813,7 +838,15 @@ class Collection implements \ArrayAccess
      */
     public function search(mixed $value, bool $strict = true): int|string|false
     {
-        // TODO: Implement search() method.
+        if (is_callable($value)) {
+            foreach ($this->items as $key => $item) {
+                if ($value($item, $key)) {
+                    return $key;
+                }
+            }
+            return false;
+        }
+        return array_search($value, $this->items, $strict);
     }
 
     /**
@@ -840,7 +873,7 @@ class Collection implements \ArrayAccess
      */
     public function skip(int $skip): static
     {
-        // TODO: Implement skip() method.
+        return $this->slice($skip);
     }
 
     /**
@@ -869,7 +902,7 @@ class Collection implements \ArrayAccess
      */
     public function slice(int $offset, int|null $length = null): static
     {
-        // TODO: Implement slice() method.
+        return new static(array_slice($this->items, $offset, $length));
     }
 
     /**
@@ -1094,7 +1127,7 @@ class Collection implements \ArrayAccess
      */
     public function unique(): static
     {
-        // TODO: Implement unique() method.
+        return new static(array_unique($this->items, SORT_REGULAR));
     }
 
     /**

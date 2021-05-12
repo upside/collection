@@ -40,7 +40,11 @@ class CollectionTest extends TestCase
         $collection = new Collection([2, 4, 6, 8]);
 
         self::assertEquals(1, $collection->search(4));
+        self::assertFalse($collection->search('4', true));
         self::assertFalse($collection->search(10));
+        self::assertEquals(2, $collection->search(function ($item, $key) {
+            return $item > 5;
+        }));
     }
 
     public function testCountBy()
@@ -86,14 +90,14 @@ class CollectionTest extends TestCase
     }
 
     /**
-     * @depends testAll
+     * @depends testToArray
      */
     public function testChunk()
     {
         $collection = new Collection([1, 2, 3, 4, 5, 6, 7]);
         $chunks = $collection->chunk(4);
 
-        self::assertEquals([[1, 2, 3, 4], [5, 6, 7]], $chunks->all());
+        self::assertEquals([[1, 2, 3, 4], [5, 6, 7]], $chunks->toArray());
     }
 
     public function testCrossJoin()
@@ -200,11 +204,6 @@ class CollectionTest extends TestCase
         $zipped = $collection->zip([100, 200]);
         self::assertEquals([['Chair', 100], ['Desk', 200]], $zipped->all());
         self::assertEquals(['Chair', 'Desk'], $collection->all());
-    }
-
-    public function testAverage()
-    {
-
     }
 
     /**
@@ -322,7 +321,14 @@ class CollectionTest extends TestCase
 
     public function testImplode()
     {
+        $collection = new Collection([
+            ['account_id' => 1, 'product' => 'Desk'],
+            ['account_id' => 2, 'product' => 'Chair'],
+        ]);
+        self::assertEquals('Desk, Chair', $collection->implode(', ', 'product'));
 
+        $collection = new Collection([1, 2, 3, 4, 5]);
+        self::assertEquals('1-2-3-4-5', $collection->implode('-'));
     }
 
     public function testMapToGroups()
@@ -332,7 +338,25 @@ class CollectionTest extends TestCase
 
     public function testEach()
     {
+        $test1 = 0;
+        $test2 = 0;
+        $collection = new Collection([1, 2, 3]);
 
+        $collection->each(function ($item, $key) use (&$test1) {
+            $test1 += $item;
+            return true;
+        });
+
+        $collection->each(function ($item, $key) use (&$test2) {
+            if ($key === 2) {
+                return false;
+            }
+            $test2 += $item;
+            return true;
+        });
+
+        self::assertEquals(6, $test1);
+        self::assertEquals(3, $test2);
     }
 
     /**
@@ -860,6 +884,7 @@ class CollectionTest extends TestCase
         self::assertEquals('taylor', $collection->get('name'));
         self::assertEquals('taylor', $collection->get('test', 'taylor'));
         self::assertEquals(34, $collection->get('age', 34));
+        self::assertNull($collection->get('test'));
     }
 
     public function testReplace()
@@ -867,6 +892,7 @@ class CollectionTest extends TestCase
         $collection = new Collection(['Taylor', 'Abigail', 'James']);
         $replaced = $collection->replace([1 => 'Victoria', 3 => 'Finn']);
         self::assertEquals(['Taylor', 'Victoria', 'James', 'Finn'], $replaced->all());
+        self::assertEquals(['Taylor', 'Abigail', 'James'], $collection->all());
     }
 
     public function testHas()
@@ -945,6 +971,13 @@ class CollectionTest extends TestCase
     public function testAvg(Collection $collection, float $actual, string|null $key)
     {
         self::assertEquals($actual, $collection->avg($key));
+    }
+
+    /**
+     * @dataProvider avgDataProvider
+     */
+    public function testAverage(Collection $collection, float $actual, string|null $key)
+    {
         self::assertEquals($actual, $collection->average($key));
     }
 
