@@ -1,0 +1,30 @@
+{
+    "name": "upside/collection",
+    "type": "library",
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "Upside",
+            "email": "upside89@gmail.com"
+        }
+    ],
+    "minimum-stability": "dev",
+    "require": {
+        "php" : ">=8.0"
+    },
+    "require-dev": {
+        "vimeo/psalm": "^4.7",
+        "symfony/var-dumper": "^5.2",
+        "phpunit/phpunit": "^9.5"
+    },
+    "autoload": {
+        "psr-4": {
+            "Upside\\": "src/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "Upside\\Tests\\": "tests/"
+        }
+    }
+}
