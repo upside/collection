@@ -33,26 +33,41 @@ class Collection implements \ArrayAccess
         return $this->items;
     }
 
+    private function toArrayRecursive($items): array
+    {
+        $result = [];
+
+        foreach ($items as $key => $item) {
+            $result[$key] = $item instanceof static ? $this->toArrayRecursive($item->toArray()) : $item;
+        }
+        return $result;
+    }
+
     /**
      * The avg method returns the average value of a given key
      * https://laravel.com/docs/8.x/collections#method-avg
      *
-     * @param int|string|callable $key
+     * @param int|string|callable|null $key
      * @return float
      */
-    public function avg(int|string|callable $key): float
+    public function avg(int|string|callable|null $key = null): float
     {
-        // TODO: Implement avg() method.
+        $count = $this->count();
+        if ($count > 0) {
+            return $this->sum($key) / $count;
+        }
+
+        return 0;
     }
 
     /**
      * Alias for the avg method.
      * https://laravel.com/docs/8.x/collections#method-average
      *
-     * @param int|string|callable $key
+     * @param int|string|callable|null $key
      * @return float
      */
-    public function average(int|string|callable $key): float
+    public function average(int|string|callable|null $key = null): float
     {
         return $this->avg($key);
     }
@@ -339,7 +354,7 @@ class Collection implements \ArrayAccess
      * The get method returns the item at a given key. If the key does not exist, null is returned
      * https://laravel.com/docs/8.x/collections#method-get
      */
-    public function get()
+    public function get(int|string|callable $key, mixed $default = null): mixed
     {
         // TODO: Implement get() method.
     }
@@ -357,7 +372,7 @@ class Collection implements \ArrayAccess
      * The has method determines if a given key exists in the collection
      * https://laravel.com/docs/8.x/collections#method-has
      */
-    public function has()
+    public function has(int|string|array $key): bool
     {
         // TODO: Implement has() method.
     }
@@ -397,18 +412,18 @@ class Collection implements \ArrayAccess
      * The isEmpty method returns true if the collection is empty; otherwise, false is returned
      * https://laravel.com/docs/8.x/collections#method-isempty
      */
-    public function isEmpty()
+    public function isEmpty(): bool
     {
-        // TODO: Implement isEmpty() method.
+        return empty($this->items);
     }
 
     /**
      * The isNotEmpty method returns true if the collection is not empty; otherwise, false is returned
      * https://laravel.com/docs/8.x/collections#method-isnotempty
      */
-    public function isNotEmpty()
+    public function isNotEmpty(): bool
     {
-        // TODO: Implement isNotEmpty() method.
+        return !$this->isEmpty();
     }
 
     /**
@@ -445,9 +460,9 @@ class Collection implements \ArrayAccess
      * The keys method returns all of the collection's keys
      * https://laravel.com/docs/8.x/collections#method-keys
      */
-    public function keys()
+    public function keys(): static
     {
-        // TODO: Implement keys() method.
+        return new static(array_keys($this->items));
     }
 
     /**
@@ -464,9 +479,14 @@ class Collection implements \ArrayAccess
      * The callback is free to modify the item and return it, thus forming a new collection of modified items
      * https://laravel.com/docs/8.x/collections#method-map
      */
-    public function map()
+    public function map(callable $callable): self
     {
-        // TODO: Implement map() method.
+        $result = [];
+        foreach ($this->items as $key => $item) {
+            $result[] = $callable($item, $key);
+        }
+
+        return new static($result);
     }
 
     /**
@@ -572,9 +592,19 @@ class Collection implements \ArrayAccess
      * The nth method creates a new collection consisting of every n-th element
      * https://laravel.com/docs/8.x/collections#method-nth
      */
-    public function nth()
+    public function nth(int $index): static
     {
-        // TODO: Implement nth() method.
+        $result = [];
+        $i = 0;
+        foreach ($this->items as $key => $item) {
+            if (($i % $index) === 0) {
+                $result[$key] = $item;
+            }
+
+            $i++;
+        }
+
+        return new static($result);
     }
 
     /**
@@ -593,9 +623,9 @@ class Collection implements \ArrayAccess
      * To pad to the left, you should specify a negative size.
      * No padding will take place if the absolute value of the given size is less than or equal to the length of the array
      */
-    public function pad()
+    public function pad(int $length, mixed $value): static
     {
-        // TODO: Implement pad() method.
+        return new static(array_pad($this->items, $length, $value));
     }
 
     /**
@@ -629,36 +659,50 @@ class Collection implements \ArrayAccess
      * The pluck method retrieves all of the values for a given key
      * https://laravel.com/docs/8.x/collections#method-pluck
      */
-    public function pluck()
+    public function pluck(int|string|callable $key, int|string|callable|null $index = null): static
     {
-        // TODO: Implement pluck() method.
+        $retriever = $this->valueRetriever($key);
+        $result = [];
+        foreach ($this->items as $item) {
+            $result[] = $retriever($item);
+        }
+        return new static($result);
     }
 
     /**
      * The pop method removes and returns the last item from the collection
      * https://laravel.com/docs/8.x/collections#method-pop
      */
-    public function pop()
+    public function pop(): mixed
     {
-        // TODO: Implement pop() method.
+        return array_pop($this->items);
     }
 
     /**
      * The prepend method adds an item to the beginning of the collection
      * https://laravel.com/docs/8.x/collections#method-prepend
      */
-    public function prepend()
+    public function prepend(mixed $value): static
     {
         // TODO: Implement prepend() method.
     }
 
+
     /**
      * The pull method removes and returns an item from the collection by its key
      * https://laravel.com/docs/8.x/collections#method-pull
+     *
+     * @param int|string $key
+     * @return mixed
      */
-    public function pull()
+    public function pull(int|string $key): mixed
     {
-        // TODO: Implement pull() method.
+        if (isset($this->items[$key])) {
+            $result = $this->items[$key];
+            unset($this->items[$key]);
+            return $result;
+        }
+        return null;
     }
 
 
@@ -719,7 +763,7 @@ class Collection implements \ArrayAccess
      * the replace method will also overwrite items in the collection that have matching numeric keys
      * https://laravel.com/docs/8.x/collections#method-replace
      */
-    public function replace()
+    public function replace(array $res): static
     {
         // TODO: Implement replace() method.
     }
@@ -737,7 +781,7 @@ class Collection implements \ArrayAccess
      * The reverse method reverses the order of the collection's items, preserving the original keys
      * https://laravel.com/docs/8.x/collections#method-reverse
      */
-    public function reverse()
+    public function reverse(): static
     {
         // TODO: Implement reverse() method.
     }
@@ -747,7 +791,7 @@ class Collection implements \ArrayAccess
      * If the item is not found, false is returned
      * https://laravel.com/docs/8.x/collections#method-search
      */
-    public function search()
+    public function search(mixed $value, bool $strict = true): int|string|false
     {
         // TODO: Implement search() method.
     }
@@ -756,9 +800,9 @@ class Collection implements \ArrayAccess
      * The shift method removes and returns the first item from the collection
      * https://laravel.com/docs/8.x/collections#method-shift
      */
-    public function shift()
+    public function shift(): mixed
     {
-        // TODO: Implement shift() method.
+        return array_shift($this->items);
     }
 
     /**
@@ -774,7 +818,7 @@ class Collection implements \ArrayAccess
      * The skip method returns a new collection, with the given number of elements removed from the beginning of the collection
      * https://laravel.com/docs/8.x/collections#method-skip
      */
-    public function skip()
+    public function skip(int $skip): static
     {
         // TODO: Implement skip() method.
     }
@@ -784,7 +828,7 @@ class Collection implements \ArrayAccess
      * then returns the remaining items in the collection as a new collection instance
      * https://laravel.com/docs/8.x/collections#method-skipuntil
      */
-    public function skipUntil()
+    public function skipUntil(callable $test): static
     {
         // TODO: Implement skipUntil() method.
     }
@@ -794,7 +838,7 @@ class Collection implements \ArrayAccess
      * then returns the remaining items in the collection as a new collection
      * https://laravel.com/docs/8.x/collections#method-skipwhile
      */
-    public function skipWhile()
+    public function skipWhile(callable $test): static
     {
         // TODO: Implement skipWhile() method.
     }
@@ -803,7 +847,7 @@ class Collection implements \ArrayAccess
      * The slice method returns a slice of the collection starting at the given index
      * https://laravel.com/docs/8.x/collections#method-slice
      */
-    public function slice()
+    public function slice(int $offset, int|null $length = null): static
     {
         // TODO: Implement slice() method.
     }
@@ -916,9 +960,16 @@ class Collection implements \ArrayAccess
      * The sum method returns the sum of all items in the collection
      * https://laravel.com/docs/8.x/collections#method-sum
      */
-    public function sum()
+    public function sum(int|string|callable|null $key = null): int|float
     {
-        // TODO: Implement sum() method.
+        $result = 0;
+
+        $retriever = $this->valueRetriever($key);
+        foreach ($this->items as $item) {
+            $result += $retriever($item);
+        }
+
+        return $result;
     }
 
     /**
@@ -973,18 +1024,18 @@ class Collection implements \ArrayAccess
      * If the collection's values are Eloquent models, the models will also be converted to arrays
      * https://laravel.com/docs/8.x/collections#method-toarray
      */
-    public function toArray()
+    public function toArray(): array
     {
-        // TODO: Implement toArray() method.
+        return $this->toArrayRecursive($this->items);
     }
 
     /**
      * The toJson method converts the collection into a JSON serialized string
      * https://laravel.com/docs/8.x/collections#method-tojson
      */
-    public function toJson()
+    public function toJson(): string
     {
-        // TODO: Implement toJson() method.
+        return json_encode($this->all(), JSON_THROW_ON_ERROR);
     }
 
     /**
@@ -1014,7 +1065,7 @@ class Collection implements \ArrayAccess
      * we will use the values method to reset the keys to consecutively numbered indexes
      * https://laravel.com/docs/8.x/collections#method-unique
      */
-    public function unique()
+    public function unique(): static
     {
         // TODO: Implement unique() method.
     }
@@ -1068,36 +1119,47 @@ class Collection implements \ArrayAccess
      * The values method returns a new collection with the keys reset to consecutive integers
      * https://laravel.com/docs/8.x/collections#method-values
      */
-    public function values()
+    public function values(): static
     {
-        // TODO: Implement values() method.
+        return new static(array_values($this->items));
     }
 
     /**
      * The when method will execute the given callback when the first argument given to the method evaluates to true
      * https://laravel.com/docs/8.x/collections#method-when
      */
-    public function when()
+    public function when(bool $condition, callable $callback): static
     {
-        // TODO: Implement when() method.
+        if ($condition) {
+            $callback($this);
+        }
+        return $this;
     }
 
     /**
      * The whenEmpty method will execute the given callback when the collection is empty
      * https://laravel.com/docs/8.x/collections#method-whenempty
      */
-    public function whenEmpty()
+    public function whenEmpty(callable $emptyCallback, callable|null $notEmptyCallback = null): static
     {
-        // TODO: Implement whenEmpty() method.
+        if (empty($this->items)) {
+            $emptyCallback($this);
+        } elseif (!is_null($notEmptyCallback)) {
+            $notEmptyCallback($this);
+        }
+        return $this;
     }
 
     /**
      * The whenNotEmpty method will execute the given callback when the collection is not empty
      * https://laravel.com/docs/8.x/collections#method-whennotempty
      */
-    public function whenNotEmpty()
+    public function whenNotEmpty(callable $callback): static
     {
-        // TODO: Implement whenNotEmpty() method.
+        if (!empty($this->items)) {
+            $callback($this);
+        }
+        return $this;
     }
 
     /**
@@ -1218,14 +1280,23 @@ class Collection implements \ArrayAccess
     }
 
 
-    private function valueRetriever(int|string|callable $value): callable
+    private function valueRetriever(int|string|callable|null $value = null): callable
     {
         if (is_callable($value)) {
             return $value;
         }
 
         return static function ($item) use ($value) {
-            return is_object($item) ? $item->{$value} : $item[$value];
+
+            if (is_null($value)) {
+                return $item;
+            }
+
+            if (is_object($item)) {
+                return $item->{$value};
+            }
+
+            return $item[$value];
         };
 
     }
