@@ -36,7 +36,6 @@ class Collection implements \ArrayAccess
     private function toArrayRecursive($items): array
     {
         $result = [];
-
         foreach ($items as $key => $item) {
             $result[$key] = $item instanceof static ? $this->toArrayRecursive($item->toArray()) : $item;
         }
@@ -82,13 +81,10 @@ class Collection implements \ArrayAccess
     public function chunk(int $size): static
     {
         $chunks = array_chunk($this->items, $size);
-
         $result = [];
-
         foreach ($chunks as $chunk) {
             $result[] = new static($chunk);
         }
-
         return new static($result);
     }
 
@@ -157,12 +153,12 @@ class Collection implements \ArrayAccess
      */
     public function concat(array $arr): static
     {
-        $result = $this->items;
+        $result = new static($this->items);
         foreach ($arr as $item) {
-            $result[] = $item;
+            $result->push($item);
         }
 
-        return new static($result);
+        return $result;
     }
 
     /**
@@ -506,12 +502,12 @@ class Collection implements \ArrayAccess
      */
     public function map(callable $callable): self
     {
-        $result = [];
+        $result = new static();
         foreach ($this->items as $key => $item) {
-            $result[] = $callable($item, $key);
+            $result->push($callable($item, $key));
         }
 
-        return new static($result);
+        return $result;
     }
 
     /**
