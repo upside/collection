@@ -467,14 +467,13 @@ class Collection implements \ArrayAccess
      */
     public function keyBy(int|string|callable $key): static
     {
-        $result = [];
-
+        $result = new static();
         $retriever = $this->valueRetriever($key);
         foreach ($this->items as $item) {
             $result[$retriever($item)] = $item;
+            $result->put($retriever($item), $item);
         }
-
-        return new static($result);
+        return $result;
     }
 
     /**
@@ -490,7 +489,7 @@ class Collection implements \ArrayAccess
      * The last method returns the last element in the collection that passes a given truth test
      * https://laravel.com/docs/8.x/collections#method-last
      */
-    public function last()
+    public function last(callable $test): mixed
     {
         // TODO: Implement last() method.
     }
@@ -615,17 +614,16 @@ class Collection implements \ArrayAccess
      */
     public function nth(int $index): static
     {
-        $result = [];
+        $result = new static();
         $i = 0;
         foreach ($this->items as $key => $item) {
             if (($i % $index) === 0) {
-                $result[$key] = $item;
+                $result->put($key, $item);
             }
-
             $i++;
         }
 
-        return new static($result);
+        return $result;
     }
 
     /**
@@ -744,9 +742,10 @@ class Collection implements \ArrayAccess
      * The put method sets the given key and value in the collection
      * https://laravel.com/docs/8.x/collections#method-put
      */
-    public function put()
+    public function put(int|string $key, mixed $value): static
     {
-        // TODO: Implement put() method.
+        $this->items[$key] = $value;
+        return $this;
     }
 
     /**
@@ -1067,7 +1066,7 @@ class Collection implements \ArrayAccess
     public function transform(callable $callback): static
     {
         foreach ($this->items as $key => $item) {
-            $this->items[$key] = $callback($item, $key);
+            $this->put($key, $callback($item, $key));
         }
         return $this;
     }
@@ -1080,11 +1079,11 @@ class Collection implements \ArrayAccess
      */
     public function union(array $arr): static
     {
-        $result = $this->items;
+        $result = new static($this->items);
         foreach ($arr as $key => $item) {
-            $result[$key] = $result[$key] ?? $item;
+            $result->put($key, $result[$key] ?? $item);
         }
-        return new static($result);
+        return $result;
     }
 
     /**
@@ -1170,7 +1169,7 @@ class Collection implements \ArrayAccess
      */
     public function whenEmpty(callable $emptyCallback, callable|null $notEmptyCallback = null): static
     {
-        if (empty($this->items)) {
+        if ($this->isEmpty()) {
             $emptyCallback($this);
         } elseif (!is_null($notEmptyCallback)) {
             $notEmptyCallback($this);
@@ -1182,10 +1181,12 @@ class Collection implements \ArrayAccess
      * The whenNotEmpty method will execute the given callback when the collection is not empty
      * https://laravel.com/docs/8.x/collections#method-whennotempty
      */
-    public function whenNotEmpty(callable $callback): static
+    public function whenNotEmpty(callable $notEmptyCallback, callable|null $emptyCallback = null): static
     {
-        if (!empty($this->items)) {
-            $callback($this);
+        if ($this->isNotEmpty()) {
+            $notEmptyCallback($this);
+        } elseif (!is_null($emptyCallback)) {
+            $emptyCallback($this);
         }
         return $this;
     }
@@ -1293,18 +1294,30 @@ class Collection implements \ArrayAccess
      * The static wrap method wraps the given value in a collection when applicable
      * https://laravel.com/docs/8.x/collections#method-wrap
      */
-    public function wrap()
+    public static function wrap(mixed $value): static
     {
-        // TODO: Implement wrap() method.
+        if (is_array($value)) {
+            return new static($value);
+        }
+
+        if ($value instanceof static) {
+            return new static($value->all());
+        }
+
+        return new static([$value]);
     }
 
     /**
      * The zip method merges together the values of the given array with the values of the original collection at their corresponding index
      * https://laravel.com/docs/8.x/collections#method-zip
      */
-    public function zip()
+    public function zip(array $arr): static
     {
-        // TODO: Implement zip() method.
+        $result = new static();
+        foreach ($this->values()->all() as $index => $item) {
+            $result->push([$item, $arr[$index]]);
+        }
+        return $result;
     }
 
 

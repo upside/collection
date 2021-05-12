@@ -108,7 +108,11 @@ class CollectionTest extends TestCase
 
     public function testLast()
     {
-
+        $collection = new Collection([1, 2, 3, 4]);
+        $last = $collection->last(function ($value, $key) {
+            return $value < 3;
+        });
+        self::assertEquals(2, $last);
     }
 
     public function testTake()
@@ -162,9 +166,24 @@ class CollectionTest extends TestCase
 
     }
 
+    /**
+     * @depends testAll
+     */
     public function testKeyBy()
     {
+        $collection = new Collection([
+            ['product_id' => 'prod-100', 'name' => 'Desk'],
+            ['product_id' => 'prod-200', 'name' => 'Chair'],
+        ]);
 
+        $keyed = $collection->keyBy('product_id');
+        self::assertEquals(
+            [
+                'prod-100' => ['product_id' => 'prod-100', 'name' => 'Desk'],
+                'prod-200' => ['product_id' => 'prod-200', 'name' => 'Chair']
+            ],
+            $keyed->all()
+        );
     }
 
     public function testJoin()
@@ -172,9 +191,15 @@ class CollectionTest extends TestCase
 
     }
 
+    /**
+     * @depends testAll
+     */
     public function testZip()
     {
-
+        $collection = new Collection(['Chair', 'Desk']);
+        $zipped = $collection->zip([100, 200]);
+        self::assertEquals([['Chair', 100], ['Desk', 200]], $zipped->all());
+        self::assertEquals(['Chair', 'Desk'], $collection->all());
     }
 
     public function testAverage()
@@ -182,9 +207,14 @@ class CollectionTest extends TestCase
 
     }
 
+    /**
+     * @depends testAll
+     */
     public function testPut()
     {
-
+        $collection = new Collection(['product_id' => 1, 'name' => 'Desk']);
+        $collection->put('price', 100);
+        self::assertEquals(['product_id' => 1, 'name' => 'Desk', 'price' => 100], $collection->all());
     }
 
     public function testUnlessEmpty()
@@ -450,7 +480,17 @@ class CollectionTest extends TestCase
 
     public function testWrap()
     {
+        $collection = Collection::wrap('John Doe');
+        self::assertEquals(['John Doe'], $collection->all());
 
+        $collection = Collection::wrap(1);
+        self::assertEquals([1], $collection->all());
+
+        $collection = Collection::wrap(['John Doe']);
+        self::assertEquals(['John Doe'], $collection->all());
+
+        $collection = Collection::wrap($collection);
+        self::assertEquals(['John Doe'], $collection->all());
     }
 
     public function testIsNotEmpty()
