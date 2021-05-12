@@ -58,9 +58,14 @@ class CollectionTest extends TestCase
 
     }
 
+    /**
+     * @depends testAll
+     */
     public function testCombine()
     {
-
+        $collection = new Collection(['name', 'age']);
+        $combined = $collection->combine(['George', 29]);
+        self::assertEquals(['name' => 'George', 'age' => 29], $combined->all());
     }
 
     public function testMapInto()
@@ -220,14 +225,28 @@ class CollectionTest extends TestCase
         self::assertEquals([1, 2, 3, 4], $collection->all());
     }
 
+    /**
+     * @depends testAll
+     */
     public function testUnion()
     {
+        $collection = new Collection([1 => ['a'], 2 => ['b']]);
+        $union = $collection->union([3 => ['c'], 1 => ['b']]);
 
+        self::assertEquals([1 => ['a'], 2 => ['b'], 3 => ['c']], $union->all());
     }
 
     public function testCollapse()
     {
+        $collection = new Collection([
+            [1, 2, 3],
+            [4, 5, 6],
+            [7, 8, 9],
+        ]);
 
+        $collapsed = $collection->collapse();
+
+        self::assertEquals([1, 2, 3, 4, 5, 6, 7, 8, 9], $collapsed->all());
     }
 
     public function testSortKeys()
@@ -255,9 +274,15 @@ class CollectionTest extends TestCase
 
     }
 
+    /**
+     * @depends testAll
+     */
     public function testConcat()
     {
-
+        $collection = new Collection(['John Doe']);
+        $concatenated = $collection->concat(['Jane Doe'])->concat(['name' => 'Johnny Doe']);
+        self::assertEquals(['John Doe'], $collection->all());
+        self::assertEquals(['John Doe', 'Jane Doe', 'Johnny Doe'], $concatenated->all());
     }
 
     public function testEachSpread()
@@ -529,9 +554,18 @@ class CollectionTest extends TestCase
 
     }
 
+    /**
+     * @depends testAll
+     */
     public function testCollect()
     {
+        $collectionA = new Collection([1, 2, 3]);
 
+        $collectionB = $collectionA->collect();
+
+        self::assertEquals([1, 2, 3], $collectionA->all());
+        self::assertEquals([1, 2, 3], $collectionB->all());
+        self::assertEquals($collectionA->all(), $collectionB->all());
     }
 
     public function testWhereStrict()
@@ -627,9 +661,18 @@ class CollectionTest extends TestCase
 
     }
 
+    /**
+     * @depends testAll
+     */
     public function testTransform()
     {
+        $collection = new Collection([1, 2, 3, 4, 5]);
 
+        $collection->transform(function ($item, $key) {
+            return $item * 2;
+        });
+
+        self::assertEquals([2, 4, 6, 8, 10], $collection->all());
     }
 
     public function testWhereNull()

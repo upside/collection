@@ -108,36 +108,61 @@ class Collection implements \ArrayAccess
      * The collapse method collapses a collection of arrays into a single, flat collection
      * https://laravel.com/docs/8.x/collections#method-collapse
      */
-    public function collapse()
+    public function collapse(): static
     {
-        // TODO: Implement collapse() method.
+        return new static($this->collapseRecursive($this->items));
+    }
+
+    private function collapseRecursive(array $items, array $result = []): array
+    {
+        foreach ($items as $item) {
+            if (is_array($item)) {
+                $result = $this->collapseRecursive($item, $result);
+            } else {
+                $result[] = $item;
+            }
+        }
+
+        return $result;
     }
 
     /**
      * The combine method combines the values of the collection, as keys, with the values of another array or collection
      * https://laravel.com/docs/8.x/collections#method-combine
      */
-    public function combine()
+    public function combine(array $arr): static
     {
-        // TODO: Implement combine() method.
+        $result = [];
+        $keys = $this->values();
+        $values = array_values($arr);
+        foreach ($values as $index => $item) {
+            $result[$keys[$index]] = $item;
+        }
+
+        return new static($result);
     }
 
     /**
      * The collect method returns a new Collection instance with the items currently in the collection
      * https://laravel.com/docs/8.x/collections#method-collect
      */
-    public function collect()
+    public function collect(): static
     {
-        // TODO: Implement collect() method.
+        return new static($this->items);
     }
 
     /**
      *  The concat method appends the given array or collection's values onto the end of another collection
      * https://laravel.com/docs/8.x/collections#method-concat
      */
-    public function concat()
+    public function concat(array $arr): static
     {
-        // TODO: Implement concat() method.
+        $result = $this->items;
+        foreach ($arr as $item) {
+            $result[] = $item;
+        }
+
+        return new static($result);
     }
 
     /**
@@ -662,11 +687,11 @@ class Collection implements \ArrayAccess
     public function pluck(int|string|callable $key, int|string|callable|null $index = null): static
     {
         $retriever = $this->valueRetriever($key);
-        $result = [];
+        $result = new static();
         foreach ($this->items as $item) {
-            $result[] = $retriever($item);
+            $result->push($retriever($item));
         }
-        return new static($result);
+        return $result;
     }
 
     /**
@@ -1043,9 +1068,12 @@ class Collection implements \ArrayAccess
      * The items in the collection will be replaced by the values returned by the callback
      * https://laravel.com/docs/8.x/collections#method-transform
      */
-    public function transform()
+    public function transform(callable $callback): static
     {
-        // TODO: Implement transform() method.
+        foreach ($this->items as $key => $item) {
+            $this->items[$key] = $callback($item, $key);
+        }
+        return $this;
     }
 
     /**
@@ -1054,9 +1082,13 @@ class Collection implements \ArrayAccess
      * the original collection's values will be preferred
      * https://laravel.com/docs/8.x/collections#method-union
      */
-    public function union()
+    public function union(array $arr): static
     {
-        // TODO: Implement union() method.
+        $result = $this->items;
+        foreach ($arr as $key => $item) {
+            $result[$key] = $result[$key] ?? $item;
+        }
+        return new static($result);
     }
 
     /**
