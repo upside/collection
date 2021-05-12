@@ -128,14 +128,14 @@ class Collection implements \ArrayAccess
      */
     public function combine(array $arr): static
     {
-        $result = [];
+        $result = new static();
         $keys = $this->values();
-        $values = array_values($arr);
+        $values = (new static($arr))->values()->all();
         foreach ($values as $index => $item) {
-            $result[$keys[$index]] = $item;
+            $result->put($keys[$index], $item);
         }
 
-        return new static($result);
+        return $result;
     }
 
     /**
