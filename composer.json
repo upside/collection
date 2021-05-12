@@ -8,6 +8,7 @@
             "email": "upside89@gmail.com"
         }
     ],
+    "homepage": "https://github.com/upside/collection",
     "minimum-stability": "dev",
     "require": {
         "php" : ">=8.0"
