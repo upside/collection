@@ -399,7 +399,15 @@ class Collection implements \ArrayAccess
      */
     public function has(int|string|array $key): bool
     {
-        // TODO: Implement has() method.
+        if (is_array($key)) {
+            foreach ($key as $item) {
+                if (!array_key_exists($item, $this->items)) {
+                    return false;
+                }
+            }
+            return true;
+        }
+        return array_key_exists($key, $this->items);
     }
 
     /**
@@ -1087,9 +1095,13 @@ class Collection implements \ArrayAccess
      * The static times method creates a new collection by invoking the given closure a specified number of times
      * https://laravel.com/docs/8.x/collections#method-times
      */
-    public static function times()
+    public static function times(int $numItems, callable $callback): static
     {
-        // TODO: Implement times() method.
+        $result = new static();
+        for ($i = 1; $i <= $numItems; $i++) {
+            $result->push($callback($i));
+        }
+        return $result;
     }
 
     /**
@@ -1156,7 +1168,6 @@ class Collection implements \ArrayAccess
      */
     public function uniqueStrict()
     {
-        // TODO: Implement uniqueStrict() method.
     }
 
     /**

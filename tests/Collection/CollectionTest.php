@@ -246,7 +246,10 @@ class CollectionTest extends TestCase
 
     public function testTimes()
     {
-
+        $collection = Collection::times(10, function ($number) {
+            return $number * 9;
+        });
+        self::assertEquals([9, 18, 27, 36, 45, 54, 63, 72, 81, 90], $collection->all());
     }
 
     /**
@@ -757,13 +760,6 @@ class CollectionTest extends TestCase
 
     public function testSplitIn()
     {
-        $collection = new Collection([1, 2, 3, 4, 5, 6, 7, 8, 9, 10]);
-
-        $groups = $collection->splitIn(3);
-
-        $groups->all();
-
-// [[1, 2, 3, 4], [5, 6, 7, 8], [9, 10]]
 
     }
 
@@ -969,7 +965,10 @@ class CollectionTest extends TestCase
 
     public function testHas()
     {
-
+        $collection = new Collection(['account_id' => 1, 'product' => 'Desk', 'amount' => 5]);
+        self::assertTrue($collection->has('product'));
+        self::assertTrue($collection->has(['product', 'amount']));
+        self::assertFalse($collection->has(['amount', 'price']));
     }
 
     public function testPartition()
