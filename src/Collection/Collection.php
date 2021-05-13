@@ -33,15 +33,6 @@ class Collection implements \ArrayAccess
         return $this->items;
     }
 
-    private function toArrayRecursive($items): array
-    {
-        $result = [];
-        foreach ($items as $key => $item) {
-            $result[$key] = $item instanceof static ? $this->toArrayRecursive($item->toArray()) : $item;
-        }
-        return $result;
-    }
-
     /**
      * The avg method returns the average value of a given key
      * https://laravel.com/docs/8.x/collections#method-avg
@@ -107,19 +98,6 @@ class Collection implements \ArrayAccess
     public function collapse(): static
     {
         return new static($this->collapseRecursive($this->items));
-    }
-
-    private function collapseRecursive(array $items, array $result = []): array
-    {
-        foreach ($items as $item) {
-            if (is_array($item)) {
-                $result = $this->collapseRecursive($item, $result);
-            } else {
-                $result[] = $item;
-            }
-        }
-
-        return $result;
     }
 
     /**
@@ -735,7 +713,6 @@ class Collection implements \ArrayAccess
         return $this;
     }
 
-
     /**
      * The pull method removes and returns an item from the collection by its key
      * https://laravel.com/docs/8.x/collections#method-pull
@@ -752,7 +729,6 @@ class Collection implements \ArrayAccess
         }
         return null;
     }
-
 
     /**
      * The push method appends an item to the end of the collection
@@ -1120,7 +1096,7 @@ class Collection implements \ArrayAccess
      */
     public function toJson(): string
     {
-        return json_encode($this->all(), JSON_THROW_ON_ERROR);
+        return json_encode($this->toArray(), JSON_THROW_ON_ERROR);
     }
 
     /**
@@ -1168,6 +1144,7 @@ class Collection implements \ArrayAccess
      */
     public function uniqueStrict()
     {
+        // TODO: Implement uniqueStrict() method.
     }
 
     /**
@@ -1384,7 +1361,6 @@ class Collection implements \ArrayAccess
         return $result;
     }
 
-
     private function valueRetriever(int|string|callable|null $value = null): callable
     {
         if (is_callable($value)) {
@@ -1404,6 +1380,28 @@ class Collection implements \ArrayAccess
             return $item[$value];
         };
 
+    }
+
+    private function toArrayRecursive($items): array
+    {
+        $result = [];
+        foreach ($items as $key => $item) {
+            $result[$key] = $item instanceof static ? $this->toArrayRecursive($item->toArray()) : $item;
+        }
+        return $result;
+    }
+
+    private function collapseRecursive(array $items, array $result = []): array
+    {
+        foreach ($items as $item) {
+            if (is_array($item)) {
+                $result = $this->collapseRecursive($item, $result);
+            } else {
+                $result[] = $item;
+            }
+        }
+
+        return $result;
     }
 
     /**
