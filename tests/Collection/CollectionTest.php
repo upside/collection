@@ -119,9 +119,14 @@ class CollectionTest extends TestCase
         self::assertEquals(2, $last);
     }
 
+    /**
+     * @depends testAll
+     */
     public function testTake()
     {
-
+        $collection = new Collection([0, 1, 2, 3, 4, 5]);
+        $chunk = $collection->take(3);
+        self::assertEquals([0, 1, 2], $chunk->all());
     }
 
     public function testDuplicates()
@@ -155,9 +160,18 @@ class CollectionTest extends TestCase
 
     }
 
+    /**
+     * @depends testAll
+     * @depends testValues
+     */
     public function testSort()
     {
+        $collection = new Collection([5, 3, 1, 2, 4]);
+        $sorted = $collection->sort();
+        $sorted->values()->all();
 
+        self::assertEquals([1, 2, 3, 4, 5], $sorted->values()->all());
+        self::assertEquals([5, 3, 1, 2, 4], $collection->all());
     }
 
     public function testReject()
@@ -165,9 +179,18 @@ class CollectionTest extends TestCase
 
     }
 
-    public function testSplit()
+    /**
+     * @depends testToArray
+     */
+    public function testsplit()
     {
+        $collection = new Collection([1, 2, 3, 4, 5]);
+        $groups = $collection->split(3);
+        self::assertEquals([[1, 2], [3, 4], [5]], $groups->toArray());
 
+        $collection = new Collection([1, 2, 3, 4, 5, 6, 7, 8, 9, 10]);
+        $groups = $collection->split(3);
+        self::assertEquals([[1, 2, 3, 4], [5, 6, 7, 8], [9, 10]], $groups->toArray());
     }
 
     /**
@@ -568,9 +591,20 @@ class CollectionTest extends TestCase
 
     }
 
+    /**
+     * @depends testAll
+     */
     public function testTakeUntil()
     {
+        $collection = new Collection([1, 2, 3, 4]);
+        $subset1 = $collection->takeUntil(function ($item) {
+            return $item >= 3;
+        });
+        $subset2 = $collection->takeUntil(3);
 
+        self::assertEquals([1, 2], $subset1->all());
+        self::assertEquals([1, 2], $subset2->all());
+        self::assertEquals([1, 2, 3, 4], $collection->all());
     }
 
     public function testUnwrap()
@@ -583,9 +617,25 @@ class CollectionTest extends TestCase
 
     }
 
+    /**
+     * @depends testAll
+     */
     public function testSplice()
     {
+        $collection = new Collection([1, 2, 3, 4, 5]);
+        $chunk = $collection->splice(2);
+        self::assertEquals([3, 4, 5], $chunk->all());
+        self::assertEquals([1, 2], $collection->all());
 
+        $collection = new Collection([1, 2, 3, 4, 5]);
+        $chunk = $collection->splice(2, 1);
+        self::assertEquals([3], $chunk->all());
+        self::assertEquals([1, 2, 4, 5], $collection->all());
+
+        $collection = new Collection([1, 2, 3, 4, 5]);
+        $chunk = $collection->splice(2, 1, [10, 11]);
+        self::assertEquals([3], $chunk->all());
+        self::assertEquals([1, 2, 10, 11, 4, 5], $collection->all());
     }
 
     public function testMergeRecursive()
@@ -692,6 +742,13 @@ class CollectionTest extends TestCase
 
     public function testSplitIn()
     {
+        $collection = new Collection([1, 2, 3, 4, 5, 6, 7, 8, 9, 10]);
+
+        $groups = $collection->splitIn(3);
+
+        $groups->all();
+
+// [[1, 2, 3, 4], [5, 6, 7, 8], [9, 10]]
 
     }
 

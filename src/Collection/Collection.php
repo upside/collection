@@ -930,9 +930,11 @@ class Collection implements \ArrayAccess
      * so in the following example we will use the values method to reset the keys to consecutively numbered indexes
      * https://laravel.com/docs/8.x/collections#method-sort
      */
-    public function sort()
+    public function sort(): static
     {
-        // TODO: Implement sort() method.
+        $sorted = $this->items;
+        asort($sorted, SORT_REGULAR);
+        return new static($sorted);
     }
 
     /**
@@ -985,18 +987,19 @@ class Collection implements \ArrayAccess
      * The splice method removes and returns a slice of items starting at the specified index
      * https://laravel.com/docs/8.x/collections#method-splice
      */
-    public function splice()
+    public function splice(int $offset, int|null $length = null, mixed $replacement = []): static
     {
-        // TODO: Implement splice() method.
+        return new static(array_splice($this->items, $offset, $length, $replacement));
     }
 
     /**
      * The split method breaks a collection into the given number of groups
      * https://laravel.com/docs/8.x/collections#method-split
      */
-    public function split()
+    public function split(int $groups): static
     {
-        // TODO: Implement split() method.
+        $chunkSize = (int)ceil($this->count() / $groups);
+        return $this->chunk($chunkSize);
     }
 
     /**
@@ -1004,7 +1007,7 @@ class Collection implements \ArrayAccess
      * filling non-terminal groups completely before allocating the remainder to the final group
      * https://laravel.com/docs/8.x/collections#method-splitin
      */
-    public function splitIn()
+    public function splitIn(int $groups): static
     {
         // TODO: Implement splitIn() method.
     }
@@ -1029,18 +1032,34 @@ class Collection implements \ArrayAccess
      * The take method returns a new collection with the specified number of items
      * https://laravel.com/docs/8.x/collections#method-take
      */
-    public function take()
+    public function take(int $numItems): static
     {
-        // TODO: Implement take() method.
+        return $this->slice(0, $numItems);
     }
 
     /**
      * The takeUntil method returns items in the collection until the given callback returns true
      * https://laravel.com/docs/8.x/collections#method-takeuntil
      */
-    public function takeUntil()
+    public function takeUntil(int|string|callable $test): static
     {
-        // TODO: Implement takeUntil() method.
+        $result = new static();
+        $isTestCallable = is_callable($test);
+        foreach ($this->items as $key => $item) {
+            if ($isTestCallable) {
+                if (!$test($item, $key)) {
+                    $result->put($key, $item);
+                    continue;
+                }
+                break;
+            }
+
+            if ($item === $test) {
+                break;
+            }
+            $result->put($key, $item);
+        }
+        return $result;
     }
 
     /**
