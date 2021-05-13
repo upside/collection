@@ -195,7 +195,7 @@ class Collection implements \ArrayAccess
      * This method will return the values in the original collection that are not present in the given collection
      * https://laravel.com/docs/8.x/collections#method-diff
      */
-    public function diff()
+    public function diff(array $items): static
     {
         // TODO: Implement diff() method.
     }
@@ -215,7 +215,7 @@ class Collection implements \ArrayAccess
      * This method will return the key / value pairs in the original collection that are not present in the given collection
      * https://laravel.com/docs/8.x/collections#method-diffkeys
      */
-    public function diffKeys()
+    public function diffKeys(array $arr): static
     {
         // TODO: Implement diffKeys() method.
     }
@@ -224,7 +224,7 @@ class Collection implements \ArrayAccess
      * The duplicates method retrieves and returns duplicate values from the collection
      * https://laravel.com/docs/8.x/collections#method-duplicates
      */
-    public function duplicates()
+    public function duplicates(int|string|callable|null $key = null): static
     {
         // TODO: Implement duplicates() method.
     }
@@ -302,7 +302,7 @@ class Collection implements \ArrayAccess
      * The first method returns the first element in the collection that passes a given truth test
      * https://laravel.com/docs/8.x/collections#method-first
      */
-    public function first()
+    public function first(callable|null $test = null): mixed
     {
         // TODO: Implement first() method.
     }
@@ -311,7 +311,7 @@ class Collection implements \ArrayAccess
      * The firstWhere method returns the first element in the collection with the given key / value pair
      * https://laravel.com/docs/8.x/collections#method-first-where
      */
-    public function firstWhere()
+    public function firstWhere(int|string|callable $key, mixed $val = null, string|callable $comparison = '='): mixed
     {
         // TODO: Implement firstWhere() method.
     }
@@ -359,7 +359,7 @@ class Collection implements \ArrayAccess
      * The method accepts the page number as its first argument and the number of items to show per page as its second argument
      * https://laravel.com/docs/8.x/collections#method-forpage
      */
-    public function forPage()
+    public function forPage(int $page, int $size): static
     {
         // TODO: Implement forPage() method.
     }
@@ -415,7 +415,7 @@ class Collection implements \ArrayAccess
      * The resulting collection will preserve the original collection's keys
      * https://laravel.com/docs/8.x/collections#method-intersect
      */
-    public function intersect()
+    public function intersect(array $items): static
     {
         // TODO: Implement intersect() method.
     }
@@ -587,7 +587,7 @@ class Collection implements \ArrayAccess
      * The max method returns the maximum value of a given key
      * https://laravel.com/docs/8.x/collections#method-max
      */
-    public function max()
+    public function max(int|string|callable|null $key = null): int|float|string
     {
         // TODO: Implement max() method.
     }
@@ -930,9 +930,9 @@ class Collection implements \ArrayAccess
      * Alias for the contains method.
      * https://laravel.com/docs/8.x/collections#method-some
      */
-    public function some()
+    public function some(string|callable $key, mixed $value = null): bool
     {
-        return $this->contains();
+        return $this->contains($key, $value);
     }
 
     /**
@@ -1077,9 +1077,17 @@ class Collection implements \ArrayAccess
      * The takeWhile method returns items in the collection until the given callback returns false
      * https://laravel.com/docs/8.x/collections#method-takewhile
      */
-    public function takeWhile()
+    public function takeWhile(callable $test): static
     {
-        // TODO: Implement takeWhile() method.
+        $result = new static();
+        foreach ($this->items as $key => $item) {
+            if ($test($item, $key)) {
+                $result->put($key, $item);
+                continue;
+            }
+            break;
+        }
+        return $result;
     }
 
     /**
@@ -1120,6 +1128,7 @@ class Collection implements \ArrayAccess
     /**
      * The toJson method converts the collection into a JSON serialized string
      * https://laravel.com/docs/8.x/collections#method-tojson
+     * @throws \JsonException
      */
     public function toJson(): string
     {
@@ -1178,34 +1187,34 @@ class Collection implements \ArrayAccess
      * The unless method will execute the given callback unless the first argument given to the method evaluates to true
      * https://laravel.com/docs/8.x/collections#method-unless
      */
-    public function unless()
+    public function unless(bool $condition, callable $callback): static
     {
-        // TODO: Implement unless() method.
+        return $this->when(!$condition, $callback);
     }
 
     /**
      * Alias for the whenNotEmpty method.
      * https://laravel.com/docs/8.x/collections#method-unlessempty
      */
-    public function unlessEmpty()
+    public function unlessEmpty(callable $notEmptyCallback, callable|null $emptyCallback = null): static
     {
-        return $this->whenNotEmpty();
+        return $this->whenNotEmpty($notEmptyCallback, $emptyCallback);
     }
 
     /**
      * Alias for the whenEmpty method.
      * https://laravel.com/docs/8.x/collections#method-unlessnotempty
      */
-    public function unlessNotEmpty()
+    public function unlessNotEmpty(callable $emptyCallback, callable|null $notEmptyCallback = null): static
     {
-        return $this->whenEmpty();
+        return $this->whenEmpty($emptyCallback, $notEmptyCallback);
     }
 
     /**
      * The static unwrap method returns the collection's underlying items from the given value when applicable
      * https://laravel.com/docs/8.x/collections#method-unwrap
      */
-    public function unwrap()
+    public static function unwrap(): static
     {
         // TODO: Implement unwrap() method.
     }
@@ -1263,7 +1272,7 @@ class Collection implements \ArrayAccess
      * The where method filters the collection by a given key / value pair
      * https://laravel.com/docs/8.x/collections#method-where
      */
-    public function where()
+    public function where(int|string|callable $key, mixed $val, string|callable $comparison = '='): static
     {
         // TODO: Implement where() method.
     }
@@ -1281,7 +1290,7 @@ class Collection implements \ArrayAccess
      * The whereBetween method filters the collection by determining if a specified item value is within a given range
      * https://laravel.com/docs/8.x/collections#method-wherebetween
      */
-    public function whereBetween()
+    public function whereBetween(int|string|callable $key, int|string|\DateTime $from, int|string|\DateTime $to): static
     {
         // TODO: Implement whereBetween() method.
     }
@@ -1393,20 +1402,15 @@ class Collection implements \ArrayAccess
         if (is_callable($value)) {
             return $value;
         }
-
         return static function ($item) use ($value) {
-
             if (is_null($value)) {
                 return $item;
             }
-
             if (is_object($item)) {
                 return $item->{$value};
             }
-
             return $item[$value];
         };
-
     }
 
     private function toArrayRecursive($items): array
