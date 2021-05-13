@@ -47,19 +47,111 @@ class CollectionTest extends TestCase
         }));
     }
 
+    /**
+     * @depends testToArray
+     */
     public function testCountBy()
     {
+        $collection = new Collection([1, 2, 2, 2, 3]);
+        $counted = $collection->countBy();
+        self::assertEquals([1 => 1, 2 => 3, 3 => 1], $counted->toArray());
 
+        $collection = new Collection(['alice@gmail.com', 'bob@yahoo.com', 'carlos@gmail.com']);
+        $counted = $collection->countBy(function ($email) {
+            return substr(strrchr($email, "@"), 1);
+        });
+        self::assertEquals(['gmail.com' => 2, 'yahoo.com' => 1], $counted->toArray());
     }
 
+    /**
+     * @depends testToArray
+     */
     public function testGroupBy()
     {
+        $collection = new Collection([
+            ['account_id' => 'account-x10', 'product' => 'Chair'],
+            ['account_id' => 'account-x10', 'product' => 'Bookcase'],
+            ['account_id' => 'account-x11', 'product' => 'Desk'],
+        ]);
 
+        $grouped = $collection->groupBy('account_id');
+
+        self::assertEquals(
+            [
+                'account-x10' => [
+                    ['account_id' => 'account-x10', 'product' => 'Chair'],
+                    ['account_id' => 'account-x10', 'product' => 'Bookcase'],
+                ],
+                'account-x11' => [
+                    ['account_id' => 'account-x11', 'product' => 'Desk'],
+                ],
+            ],
+            $grouped->toArray()
+        );
+
+        $grouped = $collection->groupBy(function ($item, $key) {
+            return substr($item['account_id'], -3);
+        });
+
+        self::assertEquals(
+            [
+                'x10' => [
+                    ['account_id' => 'account-x10', 'product' => 'Chair'],
+                    ['account_id' => 'account-x10', 'product' => 'Bookcase'],
+                ],
+                'x11' => [
+                    ['account_id' => 'account-x11', 'product' => 'Desk'],
+                ],
+            ],
+            $grouped->toArray()
+        );
+
+        $data = new Collection([
+            10 => ['user' => 1, 'skill' => 1, 'roles' => ['Role_1', 'Role_3']],
+            20 => ['user' => 2, 'skill' => 1, 'roles' => ['Role_1', 'Role_2']],
+            30 => ['user' => 3, 'skill' => 2, 'roles' => ['Role_1']],
+            40 => ['user' => 4, 'skill' => 2, 'roles' => ['Role_2']],
+        ]);
+
+        $result = $data->groupBy(['skill', function ($item) {
+            return $item['roles'];
+        }], $preserveKeys = true);
+
+        self::assertEquals(
+            [
+                1 => [
+                    'Role_1' => [
+                        10 => ['user' => 1, 'skill' => 1, 'roles' => ['Role_1', 'Role_3']],
+                        20 => ['user' => 2, 'skill' => 1, 'roles' => ['Role_1', 'Role_2']],
+                    ],
+                    'Role_2' => [
+                        20 => ['user' => 2, 'skill' => 1, 'roles' => ['Role_1', 'Role_2']],
+                    ],
+                    'Role_3' => [
+                        10 => ['user' => 1, 'skill' => 1, 'roles' => ['Role_1', 'Role_3']],
+                    ],
+                ],
+                2 => [
+                    'Role_1' => [
+                        30 => ['user' => 3, 'skill' => 2, 'roles' => ['Role_1']],
+                    ],
+                    'Role_2' => [
+                        40 => ['user' => 4, 'skill' => 2, 'roles' => ['Role_2']],
+                    ],
+                ],
+            ],
+            $result->toArray()
+        );
     }
 
+    /**
+     * @depends testToArray
+     */
     public function testExcept()
     {
-
+        $collection = new Collection(['product_id' => 1, 'price' => 100, 'discount' => false]);
+        $filtered = $collection->except(['price', 'discount']);
+        self::assertEquals(['product_id' => 1], $filtered->toArray());
     }
 
     /**
@@ -630,9 +722,19 @@ class CollectionTest extends TestCase
 
     }
 
+    /**
+     * @depends testChunk
+     * @depends testToArray
+     */
     public function testMapSpread()
     {
+        $collection = new Collection([0, 1, 2, 3, 4, 5, 6, 7, 8, 9]);
+        $chunks = $collection->chunk(2);
+        $sequence = $chunks->mapSpread(function ($even, $odd) {
+            return $even + $odd;
+        });
 
+        self::assertEquals([1, 5, 9, 13, 17], $sequence->toArray());
     }
 
     /**
@@ -656,14 +758,39 @@ class CollectionTest extends TestCase
         self::assertEquals([1, 2, 10, 11, 4, 5], $collection->all());
     }
 
+    /**
+     * @depends testToArray
+     */
     public function testMergeRecursive()
     {
+        $collection = new Collection(['product_id' => 1, 'price' => 100]);
 
+        $merged = $collection->mergeRecursive([
+            'product_id' => 2,
+            'price' => 200,
+            'discount' => false
+        ]);
+
+        self::assertEquals(['product_id' => [1, 2], 'price' => [100, 200], 'discount' => false], $merged->toArray());
     }
 
     public function testContains()
     {
+        $collection = new Collection([1, 2, 3, 4, 5]);
+        self::assertFalse($collection->contains(function ($value, $key) {
+            return $value > 5;
+        }));
 
+        $collection = new Collection(['name' => 'Desk', 'price' => 100]);
+        self::assertTrue($collection->contains('Desk'));
+        self::assertFalse($collection->contains('New York'));
+
+        $collection = new Collection([
+            ['product' => 'Desk', 'price' => 200],
+            ['product' => 'Chair', 'price' => 100],
+        ]);
+
+        self::assertFalse($collection->contains('product', 'Bookcase'));
     }
 
     public function testWhereInStrict()
@@ -678,7 +805,11 @@ class CollectionTest extends TestCase
 
     public function testEvery()
     {
+        $collection = new Collection([1, 2, 3, 4]);
 
+        self::assertFalse($collection->every(function ($value, $key) {
+            return $value > 2;
+        }));
     }
 
     public function testWhereNotNull()

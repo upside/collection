@@ -143,7 +143,7 @@ class Collection implements \ArrayAccess
      * You may also pass a closure to the contains to determine if an element exists in the collection matching a given truth test
      * https://laravel.com/docs/8.x/collections#method-contains
      */
-    public function contains()
+    public function contains(string|callable $key, mixed $value = null): bool
     {
         // TODO: Implement contains() method.
     }
@@ -174,7 +174,7 @@ class Collection implements \ArrayAccess
      * https://laravel.com/docs/8.x/collections#method-countBy
      *
      */
-    public function countBy()
+    public function countBy(callable|null $test = null): static
     {
         // TODO: Implement countBy() method.
     }
@@ -264,18 +264,29 @@ class Collection implements \ArrayAccess
      * The every method may be used to verify that all elements of a collection pass a given truth test
      * https://laravel.com/docs/8.x/collections#method-every
      */
-    public function every()
+    public function every(callable $test): bool
     {
-        // TODO: Implement every() method.
+        foreach ($this->items as $key => $item) {
+            if (!$test($item, $key)) {
+                return false;
+            }
+        }
+        return true;
     }
 
     /**
      * The except method returns all items in the collection except for those with the specified keys
      * https://laravel.com/docs/8.x/collections#method-except
      */
-    public function except()
+    public function except(array $keys): static
     {
-        // TODO: Implement except() method.
+        $result = new static();
+        foreach ($this->items as $key => $item) {
+            if (!in_array($key, $keys, true)) {
+                $result->put($key, $item);
+            }
+        }
+        return $result;
     }
 
     /**
@@ -366,7 +377,7 @@ class Collection implements \ArrayAccess
      * The groupBy method groups the collection's items by a given key
      * https://laravel.com/docs/8.x/collections#method-groupby
      */
-    public function groupBy()
+    public function groupBy(string|callable|array $key, bool $preserveKeys = false): static
     {
         // TODO: Implement groupBy() method.
     }
@@ -520,9 +531,13 @@ class Collection implements \ArrayAccess
      * creating a new instance of the given class by passing the value into the constructor
      * https://laravel.com/docs/8.x/collections#method-mapinto
      */
-    public function mapInto()
+    public function mapInto(string $class): static
     {
-        // TODO: Implement mapInto() method.
+        $result = new static();
+        foreach ($this->items as $item) {
+            $result->push(new $class($item));
+        }
+        return $result;
     }
 
     /**
@@ -530,9 +545,21 @@ class Collection implements \ArrayAccess
      * The closure is free to modify the item and return it, thus forming a new collection of modified items
      * https://laravel.com/docs/8.x/collections#method-mapspread
      */
-    public function mapSpread()
+    public function mapSpread(callable $callback): static
     {
-        // TODO: Implement mapSpread() method.
+        $result = new static();
+        foreach ($this->items as $item) {
+            if (is_array($item)) {
+                $result->push($callback(...$item));
+                continue;
+            }
+            if ($item instanceof static) {
+                $result->push($callback(...$item->all()));
+                continue;
+            }
+            $result->push($callback($item));
+        }
+        return $result;
     }
 
     /**
@@ -591,7 +618,7 @@ class Collection implements \ArrayAccess
      * then the values for these keys are merged together into an array, and this is done recursively
      * https://laravel.com/docs/8.x/collections#method-mergerecursive
      */
-    public function mergeRecursive()
+    public function mergeRecursive(array $items): static
     {
         // TODO: Implement mergeRecursive() method.
     }
