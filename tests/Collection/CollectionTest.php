@@ -810,6 +810,10 @@ class CollectionTest extends TestCase
         self::assertFalse($collection->every(function ($value, $key) {
             return $value > 2;
         }));
+
+        self::assertTrue($collection->every(function ($value, $key) {
+            return $value > 0;
+        }));
     }
 
     public function testWhereNotNull()
