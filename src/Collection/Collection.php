@@ -1077,9 +1077,10 @@ class Collection implements \ArrayAccess
      * The collection is then returned by the tap method
      * https://laravel.com/docs/8.x/collections#method-tap
      */
-    public function tap()
+    public function tap(callable $callback): static
     {
-        // TODO: Implement tap() method.
+        $callback($this);
+        return $this;
     }
 
     /**

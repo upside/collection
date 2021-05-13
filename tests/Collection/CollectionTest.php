@@ -490,9 +490,24 @@ class CollectionTest extends TestCase
 
     }
 
+    /**
+     * @depends testAll
+     * @depends testSort
+     * @depends testShift
+     * @depends testValues
+     */
     public function testTap()
     {
-
+        $collection = new Collection([2, 4, 3, 1, 5]);
+        self::assertEquals(
+            1,
+            $collection
+                ->sort()
+                ->tap(function (Collection $collection) {
+                    self::assertEquals([1, 2, 3, 4, 5], $collection->values()->all());
+                })
+                ->shift()
+        );
     }
 
     public function testDiff()
