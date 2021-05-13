@@ -85,7 +85,7 @@ class Collection implements \ArrayAccess
      * closure may be used to inspect the previous element
      * https://laravel.com/docs/8.x/collections#method-chunkwhile
      */
-    public function chunkWhile()
+    public function chunkWhile(callable $test): static
     {
         // TODO: Implement chunkWhile() method.
     }
@@ -490,8 +490,11 @@ class Collection implements \ArrayAccess
      * The last method returns the last element in the collection that passes a given truth test
      * https://laravel.com/docs/8.x/collections#method-last
      */
-    public function last(callable $test): mixed
+    public function last(callable|null $test = null): mixed
     {
+        if (is_null($test)) {
+            return $this->isNotEmpty() ? $this->items[array_key_last($this->items)] : null;
+        }
         $last = null;
         foreach ($this->items as $key => $item) {
             if ($test($item, $key)) {
@@ -1128,11 +1131,14 @@ class Collection implements \ArrayAccess
     /**
      * The toJson method converts the collection into a JSON serialized string
      * https://laravel.com/docs/8.x/collections#method-tojson
-     * @throws \JsonException
      */
-    public function toJson(): string
+    public function toJson(): string|null
     {
-        return json_encode($this->toArray(), JSON_THROW_ON_ERROR);
+        try {
+            return json_encode($this->toArray(), JSON_THROW_ON_ERROR);
+        } catch (\JsonException) {
+            return null;
+        }
     }
 
     /**

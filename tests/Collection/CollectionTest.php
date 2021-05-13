@@ -34,7 +34,7 @@ class CollectionTest extends TestCase
     /**
      * @depends testToArray
      */
-    public function testChunk()
+    public function testChunk(): void
     {
         $collection = new Collection([1, 2, 3, 4, 5, 6, 7]);
         $chunks = $collection->chunk(4);
@@ -42,12 +42,20 @@ class CollectionTest extends TestCase
         self::assertEquals([[1, 2, 3, 4], [5, 6, 7]], $chunks->toArray());
     }
 
-    public function testChunkWhile()
+    /**
+     * @depends testToArray
+     * @depends testLast
+     */
+    public function testChunkWhile(): void
     {
-
+        $collection = new Collection(str_split('AABBCCCD'));
+        $chunks = $collection->chunkWhile(function ($value, $key, Collection $chunk) {
+            return $value === $chunk->last();
+        });
+        self::assertEquals([['A', 'A'], ['B', 'B'], ['C', 'C', 'C'], ['D']], $chunks->toArray());
     }
 
-    public function testCollapse()
+    public function testCollapse(): void
     {
         $collection = new Collection([
             [1, 2, 3],
@@ -63,7 +71,7 @@ class CollectionTest extends TestCase
     /**
      * @depends testAll
      */
-    public function testCombine()
+    public function testCombine(): void
     {
         $collection = new Collection(['name', 'age']);
         $combined = $collection->combine(['George', 29]);
@@ -87,7 +95,7 @@ class CollectionTest extends TestCase
     /**
      * @depends testAll
      */
-    public function testConcat()
+    public function testConcat(): void
     {
         $collection = new Collection(['John Doe']);
         $concatenated = $collection->concat(['Jane Doe'])->concat(['name' => 'Johnny Doe']);
@@ -95,10 +103,10 @@ class CollectionTest extends TestCase
         self::assertEquals(['John Doe', 'Jane Doe', 'Johnny Doe'], $concatenated->all());
     }
 
-    public function testContains()
+    public function testContains(): void
     {
         $collection = new Collection([1, 2, 3, 4, 5]);
-        self::assertFalse($collection->contains(function ($value, $key) {
+        self::assertFalse($collection->contains(function ($value) {
             return $value > 5;
         }));
 
@@ -119,7 +127,7 @@ class CollectionTest extends TestCase
 
     }
 
-    public function testCount()
+    public function testCount(): void
     {
         $collection = new Collection([1, 2, 3, 4]);
         self::assertEquals(4, $collection->count());
@@ -128,7 +136,7 @@ class CollectionTest extends TestCase
     /**
      * @depends testToArray
      */
-    public function testCountBy()
+    public function testCountBy(): void
     {
         $collection = new Collection([1, 2, 2, 2, 3]);
         $counted = $collection->countBy();
@@ -187,7 +195,7 @@ class CollectionTest extends TestCase
     /**
      * @depends testToArray
      */
-    public function testDuplicates()
+    public function testDuplicates(): void
     {
         $collection = new Collection(['a', 'b', 'a', 'c', 'b']);
         $duplicates = $collection->duplicates();
@@ -215,7 +223,7 @@ class CollectionTest extends TestCase
         $test2 = 0;
         $collection = new Collection([1, 2, 3]);
 
-        $collection->each(function ($item, $key) use (&$test1) {
+        $collection->each(function ($item) use (&$test1) {
             $test1 += $item;
             return true;
         });
@@ -241,11 +249,11 @@ class CollectionTest extends TestCase
     {
         $collection = new Collection([1, 2, 3, 4]);
 
-        self::assertFalse($collection->every(function ($value, $key) {
+        self::assertFalse($collection->every(function ($value) {
             return $value > 2;
         }));
 
-        self::assertTrue($collection->every(function ($value, $key) {
+        self::assertTrue($collection->every(function ($value) {
             return $value > 0;
         }));
     }
@@ -269,11 +277,11 @@ class CollectionTest extends TestCase
     {
         $collection = new Collection([1, 2, 3, 4]);
 
-        $collection->first(function ($value, $key) {
+        $collection->first(function ($value) {
             return $value > 2;
         });
 
-        self::assertEquals(3, $collection->first(function ($value, $key) {
+        self::assertEquals(3, $collection->first(function ($value) {
             return $value > 2;
         }));
         self::assertEquals(1, $collection->first());
@@ -358,7 +366,7 @@ class CollectionTest extends TestCase
             $grouped->toArray()
         );
 
-        $grouped = $collection->groupBy(function ($item, $key) {
+        $grouped = $collection->groupBy(function ($item) {
             return substr($item['account_id'], -3);
         });
 
@@ -384,7 +392,7 @@ class CollectionTest extends TestCase
 
         $result = $data->groupBy(['skill', function ($item) {
             return $item['roles'];
-        }], $preserveKeys = true);
+        }], true);
 
         self::assertEquals(
             [
@@ -509,7 +517,7 @@ class CollectionTest extends TestCase
     public function testLast(): void
     {
         $collection = new Collection([1, 2, 3, 4]);
-        $last = $collection->last(function ($value, $key) {
+        $last = $collection->last(function ($value) {
             return $value < 3;
         });
         self::assertEquals(2, $last);
@@ -530,7 +538,7 @@ class CollectionTest extends TestCase
     public function testMap(): void
     {
         $collection = new Collection([1, 2, 3, 4, 5]);
-        $multiplied = $collection->map(function ($item, $key) {
+        $multiplied = $collection->map(function ($item) {
             return $item * 2;
         });
 
@@ -802,7 +810,7 @@ class CollectionTest extends TestCase
         self::assertEquals(1, $collection->search(4));
         self::assertFalse($collection->search('4', true));
         self::assertFalse($collection->search(10));
-        self::assertEquals(2, $collection->search(function ($item, $key) {
+        self::assertEquals(2, $collection->search(function ($item) {
             return $item > 5;
         }));
     }
@@ -1064,7 +1072,7 @@ class CollectionTest extends TestCase
     {
         $collection = new Collection([1, 2, 3, 4, 5]);
 
-        $collection->transform(function ($item, $key) {
+        $collection->transform(function ($item) {
             return $item * 2;
         });
 
@@ -1406,6 +1414,9 @@ class CollectionTest extends TestCase
      **********************************************************
      */
 
+    /**
+     * @noinspection PhpPureAttributeCanBeAddedInspection
+     */
     public function allDataProvider(): array
     {
         return [
@@ -1416,6 +1427,9 @@ class CollectionTest extends TestCase
         ];
     }
 
+    /**
+     * @noinspection PhpPureAttributeCanBeAddedInspection
+     */
     public function toArrayDataProvider(): array
     {
         return [
@@ -1426,6 +1440,9 @@ class CollectionTest extends TestCase
         ];
     }
 
+    /**
+     * @noinspection PhpPureAttributeCanBeAddedInspection
+     */
     public function avgDataProvider(): array
     {
         return [
