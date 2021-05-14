@@ -149,9 +149,38 @@ class CollectionTest extends TestCase
         self::assertEquals(['gmail.com' => 2, 'yahoo.com' => 1], $counted->toArray());
     }
 
+    /**
+     * @depends testToArray
+     */
     public function testCrossJoin(): void
     {
+        $collection = new Collection([1, 2]);
+        $matrix = $collection->crossJoin(['a', 'b']);
+        self::assertEquals(
+            [
+                [1, 'a'],
+                [1, 'b'],
+                [2, 'a'],
+                [2, 'b'],
+            ],
+            $matrix->toArray()
+        );
 
+        $collection = new Collection([1, 2]);
+        $matrix = $collection->crossJoin(['a', 'b'], ['I', 'II']);
+        self::assertEquals(
+            [
+                [1, 'a', 'I'],
+                [1, 'a', 'II'],
+                [1, 'b', 'I'],
+                [1, 'b', 'II'],
+                [2, 'a', 'I'],
+                [2, 'a', 'II'],
+                [2, 'b', 'I'],
+                [2, 'b', 'II'],
+            ],
+            $matrix->toArray()
+        );
     }
 
     /**
@@ -164,9 +193,25 @@ class CollectionTest extends TestCase
         self::assertEquals([1, 3, 5], $diff->toArray());
     }
 
+    /**
+     * @depends testToArray
+     */
     public function testDiffAssoc(): void
     {
+        $collection = new Collection([
+            'color' => 'orange',
+            'type' => 'fruit',
+            'remain' => 6,
+        ]);
 
+        $diff = $collection->diffAssoc([
+            'color' => 'yellow',
+            'type' => 'fruit',
+            'remain' => 3,
+            'used' => 6,
+        ]);
+
+        self::assertEquals(['color' => 'orange', 'remain' => 6], $diff->toArray());
     }
 
     /**
@@ -242,7 +287,14 @@ class CollectionTest extends TestCase
 
     public function testEachSpread(): void
     {
+        $collection = new Collection([['John Doe', 35], ['Jane Doe', 33]]);
 
+        $test = [];
+        $collection->eachSpread(function ($name, $age) use (&$test) {
+            $test[] = [$name, $age];
+        });
+
+        self::assertEquals([['John Doe', 35], ['Jane Doe', 33]], $test);
     }
 
     public function testEvery(): void
@@ -270,7 +322,14 @@ class CollectionTest extends TestCase
 
     public function testFilter(): void
     {
+        $collection = new Collection([1, 2, 3, 4]);
+        $filtered = $collection->filter(function ($value, $key) {
+            return $value > 2;
+        });
+        self::assertEquals([3, 4], $filtered->toArray());
 
+        $collection = new Collection([1, 2, 3, null, false, '', 0, []]);
+        self::assertEquals([1, 2, 3], $collection->filter()->toArray());
     }
 
     public function testFirst(): void
@@ -301,24 +360,79 @@ class CollectionTest extends TestCase
         self::assertEquals(['name' => 'Linda', 'age' => 14], $collection->firstWhere('age'));
     }
 
+    /**
+     * @depends testToArray
+     */
     public function testFlatMap(): void
     {
-
+        $collection = new Collection([
+            ['name' => 'Sally'],
+            ['school' => 'Arkansas'],
+            ['age' => 28]
+        ]);
+        $flattened = $collection->flatMap(function ($values) {
+            return array_map('strtoupper', $values);
+        });
+        self::assertEquals(['name' => 'SALLY', 'school' => 'ARKANSAS', 'age' => '28'], $flattened->toArray());
     }
 
+    /**
+     * @depends testToArray
+     * @depends testValues
+     */
     public function testFlatten(): void
     {
+        $collection = new Collection([
+            'name' => 'taylor',
+            'languages' => [
+                'php', 'javascript'
+            ]
+        ]);
+        $flattened = $collection->flatten();
+        self::assertEquals(['taylor', 'php', 'javascript'], $flattened->toArray());
 
+        $collection = new Collection([
+            'Apple' => [
+                [
+                    'name' => 'iPhone 6S',
+                    'brand' => 'Apple'
+                ],
+            ],
+            'Samsung' => [
+                [
+                    'name' => 'Galaxy S7',
+                    'brand' => 'Samsung'
+                ],
+            ],
+        ]);
+        $products = $collection->flatten(1);
+        self::assertEquals(
+            [
+                ['name' => 'iPhone 6S', 'brand' => 'Apple'],
+                ['name' => 'Galaxy S7', 'brand' => 'Samsung'],
+            ],
+            $products->values()->toArray()
+        );
     }
 
+    /**
+     * @depends testToArray
+     */
     public function testFlip(): void
     {
-
+        $collection = new Collection(['name' => 'taylor', 'framework' => 'laravel']);
+        $flipped = $collection->flip();
+        self::assertEquals(['taylor' => 'name', 'laravel' => 'framework'], $flipped->toArray());
     }
 
+    /**
+     * @depends testToArray
+     */
     public function testForget(): void
     {
-
+        $collection = new Collection(['name' => 'taylor', 'framework' => 'laravel']);
+        $collection->forget('name');
+        self::assertEquals(['framework' => 'laravel'], $collection->toArray());
     }
 
     /**
@@ -882,11 +996,43 @@ class CollectionTest extends TestCase
 
     public function testSole(): void
     {
+        $collection = new Collection([1, 2, 3, 4]);
 
+        self::assertEquals(3, $collection->sole(function ($value, $key) {
+            return $value === 2;
+        }));
+
+        $collection = new Collection([
+            ['product' => 'Desk', 'price' => 200],
+            ['product' => 'Chair', 'price' => 100],
+        ]);
+
+        self::assertEquals(['product' => 'Chair', 'price' => 100], $collection->sole('product', 'Chair'));
+
+        $collection = new Collection([
+            ['product' => 'Desk', 'price' => 200],
+        ]);
+
+        self::assertEquals(['product' => 'Desk', 'price' => 200], $collection->sole());
     }
 
     public function testSome(): void
     {
+        $collection = new Collection([1, 2, 3, 4, 5]);
+        self::assertFalse($collection->some(function ($value) {
+            return $value > 5;
+        }));
+
+        $collection = new Collection(['name' => 'Desk', 'price' => 100]);
+        self::assertTrue($collection->some('Desk'));
+        self::assertFalse($collection->some('New York'));
+
+        $collection = new Collection([
+            ['product' => 'Desk', 'price' => 200],
+            ['product' => 'Chair', 'price' => 100],
+        ]);
+
+        self::assertFalse($collection->some('product', 'Bookcase'));
 
     }
 
@@ -904,9 +1050,98 @@ class CollectionTest extends TestCase
         self::assertEquals([5, 3, 1, 2, 4], $collection->toArray());
     }
 
+    /**
+     * @depends testToArray
+     * @depends testValues
+     */
     public function testSortBy(): void
     {
+        $collection = new Collection([
+            ['name' => 'Desk', 'price' => 200],
+            ['name' => 'Chair', 'price' => 100],
+            ['name' => 'Bookcase', 'price' => 150],
+        ]);
+        $sorted = $collection->sortBy('price');
+        self::assertEquals(
+            [
+                ['name' => 'Chair', 'price' => 100],
+                ['name' => 'Bookcase', 'price' => 150],
+                ['name' => 'Desk', 'price' => 200],
+            ],
+            $sorted->values()->toArray()
+        );
 
+        $collection = new Collection([
+            ['title' => 'Item 1'],
+            ['title' => 'Item 12'],
+            ['title' => 'Item 3'],
+        ]);
+        $sorted = $collection->sortBy('title', SORT_NATURAL);
+        self::assertEquals(
+            [
+                ['title' => 'Item 1'],
+                ['title' => 'Item 3'],
+                ['title' => 'Item 12'],
+            ],
+            $sorted->values()->toArray()
+        );
+
+        $collection = new Collection([
+            ['name' => 'Desk', 'colors' => ['Black', 'Mahogany']],
+            ['name' => 'Chair', 'colors' => ['Black']],
+            ['name' => 'Bookcase', 'colors' => ['Red', 'Beige', 'Brown']],
+        ]);
+        $sorted = $collection->sortBy(function ($product, $key) {
+            return count($product['colors']);
+        });
+        self::assertEquals(
+            [
+                ['name' => 'Chair', 'colors' => ['Black']],
+                ['name' => 'Desk', 'colors' => ['Black', 'Mahogany']],
+                ['name' => 'Bookcase', 'colors' => ['Red', 'Beige', 'Brown']],
+            ],
+            $sorted->values()->toArray()
+        );
+
+        $collection = new Collection([
+            ['name' => 'Taylor Otwell', 'age' => 34],
+            ['name' => 'Abigail Otwell', 'age' => 30],
+            ['name' => 'Taylor Otwell', 'age' => 36],
+            ['name' => 'Abigail Otwell', 'age' => 32],
+        ]);
+        $sorted = $collection->sortBy([
+            ['name', 'asc'],
+            ['age', 'desc'],
+        ]);
+        self::assertEquals(
+            [
+                ['name' => 'Abigail Otwell', 'age' => 32],
+                ['name' => 'Abigail Otwell', 'age' => 30],
+                ['name' => 'Taylor Otwell', 'age' => 36],
+                ['name' => 'Taylor Otwell', 'age' => 34],
+            ],
+            $sorted->values()->toArray()
+        );
+
+        $collection = new Collection([
+            ['name' => 'Taylor Otwell', 'age' => 34],
+            ['name' => 'Abigail Otwell', 'age' => 30],
+            ['name' => 'Taylor Otwell', 'age' => 36],
+            ['name' => 'Abigail Otwell', 'age' => 32],
+        ]);
+        $sorted = $collection->sortBy([
+            fn($a, $b) => $a['name'] <=> $b['name'],
+            fn($a, $b) => $b['age'] <=> $a['age'],
+        ]);
+        self::assertEquals(
+            [
+                ['name' => 'Abigail Otwell', 'age' => 32],
+                ['name' => 'Abigail Otwell', 'age' => 30],
+                ['name' => 'Taylor Otwell', 'age' => 36],
+                ['name' => 'Taylor Otwell', 'age' => 34],
+            ],
+            $sorted->values()->toArray()
+        );
     }
 
     public function testSortByDesc(): void
@@ -914,14 +1149,29 @@ class CollectionTest extends TestCase
 
     }
 
+    /**
+     * @depends testToArray
+     * @depends testValues
+     */
     public function testSortDesc(): void
     {
-
+        $collection = new Collection([5, 3, 1, 2, 4]);
+        $sorted = $collection->sortDesc();
+        self::assertEquals([5, 4, 3, 2, 1], $sorted->values()->toArray());
     }
 
+    /**
+     * @depends testToArray
+     */
     public function testSortKeys(): void
     {
-
+        $collection = new Collection([
+            'id' => 22345,
+            'first' => 'John',
+            'last' => 'Doe',
+        ]);
+        $sorted = $collection->sortKeys();
+        self::assertEquals(['first' => 'John', 'id' => 22345, 'last' => 'Doe'], $sorted->toArray());
     }
 
     public function testSortKeysDesc(): void
@@ -964,9 +1214,14 @@ class CollectionTest extends TestCase
         self::assertEquals([[1, 2, 3, 4], [5, 6, 7, 8], [9, 10]], $groups->toArray());
     }
 
+    /**
+     * @depends testToArray
+     */
     public function testSplitIn(): void
     {
-
+        $collection = new Collection([1, 2, 3, 4, 5, 6, 7, 8, 9, 10]);
+        $groups = $collection->splitIn(3);
+        self::assertEquals([[1, 2, 3, 4], [5, 6, 7, 8], [9, 10]], $groups->toArray());
     }
 
     public function testSum(): void
@@ -1181,7 +1436,10 @@ class CollectionTest extends TestCase
 
     public function testUnwrap(): void
     {
-
+        self::assertEquals(['John Doe'], Collection::unwrap(new Collection(['John Doe'])));
+        self::assertEquals(['John Doe'], Collection::unwrap(['John Doe']));
+        self::assertEquals('John Doe', Collection::unwrap('John Doe'));
+        self::assertEquals(1, Collection::unwrap(1));
     }
 
     /**
@@ -1342,9 +1600,27 @@ class CollectionTest extends TestCase
         );
     }
 
+    /**
+     * @depends testToArray
+     */
     public function testWhereIn(): void
     {
+        $collection = new Collection([
+            ['product' => 'Desk', 'price' => 200],
+            ['product' => 'Chair', 'price' => 100],
+            ['product' => 'Bookcase', 'price' => 150],
+            ['product' => 'Door', 'price' => 100],
+        ]);
 
+        $filtered = $collection->whereIn('price', [150, 200]);
+
+        self::assertEquals(
+            [
+                ['product' => 'Desk', 'price' => 200],
+                ['product' => 'Bookcase', 'price' => 150],
+            ],
+            $filtered->toArray()
+        );
     }
 
     public function testWhereInStrict(): void
@@ -1357,14 +1633,51 @@ class CollectionTest extends TestCase
 
     }
 
+    /**
+     * @depends testToArray
+     */
     public function testWhereNotBetween(): void
     {
+        $collection = new Collection([
+            ['product' => 'Desk', 'price' => 200],
+            ['product' => 'Chair', 'price' => 80],
+            ['product' => 'Bookcase', 'price' => 150],
+            ['product' => 'Pencil', 'price' => 30],
+            ['product' => 'Door', 'price' => 100],
+        ]);
 
+        $filtered = $collection->whereNotBetween('price', 100, 200);
+
+        self::assertEquals(
+            [
+                ['product' => 'Chair', 'price' => 80],
+                ['product' => 'Pencil', 'price' => 30],
+            ],
+            $filtered->toArray()
+        );
     }
 
+    /**
+     * @depends testToArray
+     */
     public function testWhereNotIn(): void
     {
+        $collection = new Collection([
+            ['product' => 'Desk', 'price' => 200],
+            ['product' => 'Chair', 'price' => 100],
+            ['product' => 'Bookcase', 'price' => 150],
+            ['product' => 'Door', 'price' => 100],
+        ]);
 
+        $filtered = $collection->whereNotIn('price', [150, 200]);
+
+        self::assertEquals(
+            [
+                ['product' => 'Chair', 'price' => 100],
+                ['product' => 'Door', 'price' => 100]
+            ],
+            $filtered->toArray()
+        );
     }
 
     public function testWhereNotInStrict(): void
@@ -1372,29 +1685,50 @@ class CollectionTest extends TestCase
 
     }
 
+    /**
+     * @depends testToArray
+     */
     public function testWhereNotNull(): void
     {
-
+        $collection = new Collection([
+            ['name' => 'Desk'],
+            ['name' => null],
+            ['name' => 'Bookcase'],
+        ]);
+        $filtered = $collection->whereNotNull('name');
+        self::assertEquals([['name' => 'Desk'], ['name' => 'Bookcase']], $filtered->toArray());
     }
 
+    /**
+     * @depends testToArray
+     */
     public function testWhereNull(): void
     {
-
+        $collection = new Collection([
+            ['name' => 'Desk'],
+            ['name' => null],
+            ['name' => 'Bookcase'],
+        ]);
+        $filtered = $collection->whereNull('name');
+        self::assertEquals([['name' => null]], $filtered->toArray());
     }
 
+    /**
+     * @depends testToArray
+     */
     public function testWrap(): void
     {
         $collection = Collection::wrap('John Doe');
-        self::assertEquals(['John Doe'], $collection->all());
+        self::assertEquals(['John Doe'], $collection->toArray());
 
         $collection = Collection::wrap(1);
-        self::assertEquals([1], $collection->all());
+        self::assertEquals([1], $collection->toArray());
 
         $collection = Collection::wrap(['John Doe']);
-        self::assertEquals(['John Doe'], $collection->all());
+        self::assertEquals(['John Doe'], $collection->toArray());
 
         $collection = Collection::wrap($collection);
-        self::assertEquals(['John Doe'], $collection->all());
+        self::assertEquals(['John Doe'], $collection->toArray());
     }
 
     /**

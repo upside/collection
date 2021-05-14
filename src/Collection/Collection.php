@@ -185,7 +185,7 @@ class Collection implements \ArrayAccess
      * https://laravel.com/docs/8.x/collections#method-crossjoin
      *
      */
-    public function crossJoin()
+    public function crossJoin(array ...$items): static
     {
         // TODO: Implement crossJoin() method.
     }
@@ -205,7 +205,7 @@ class Collection implements \ArrayAccess
      * This method will return the key / value pairs in the original collection that are not present in the given collection
      * https://laravel.com/docs/8.x/collections#method-diffassoc
      */
-    public function diffAssoc()
+    public function diffAssoc(array $items): static
     {
         // TODO: Implement diffAssoc() method.
     }
@@ -255,9 +255,14 @@ class Collection implements \ArrayAccess
      * The eachSpread method iterates over the collection's items, passing each nested item value into the given callback
      * https://laravel.com/docs/8.x/collections#method-eachspread
      */
-    public function eachSpread()
+    public function eachSpread(callable $callback): static
     {
-        // TODO: Implement eachSpread() method.
+        foreach ($this->items as $item) {
+            if ($callback(...$item) === false) {
+                break;
+            }
+        }
+        return $this;
     }
 
     /**
@@ -293,7 +298,7 @@ class Collection implements \ArrayAccess
      * The filter method filters the collection using the given callback, keeping only those items that pass a given truth test
      * https://laravel.com/docs/8.x/collections#method-filter
      */
-    public function filter()
+    public function filter(callable|null $filter = null): static
     {
         // TODO: Implement filter() method.
     }
@@ -322,7 +327,7 @@ class Collection implements \ArrayAccess
      * Then, the array is flattened by one level
      * https://laravel.com/docs/8.x/collections#method-flatmap
      */
-    public function flatMap()
+    public function flatMap(callable $callback): static
     {
         // TODO: Implement flatMap() method.
     }
@@ -331,7 +336,7 @@ class Collection implements \ArrayAccess
      * The flatten method flattens a multi-dimensional collection into a single dimension
      * https://laravel.com/docs/8.x/collections#method-flatten
      */
-    public function flatten()
+    public function flatten(int|null $dept = null): static
     {
         // TODO: Implement flatten() method.
     }
@@ -340,18 +345,21 @@ class Collection implements \ArrayAccess
      * The flip method swaps the collection's keys with their corresponding values
      * https://laravel.com/docs/8.x/collections#method-flip
      */
-    public function flip()
+    public function flip(): static
     {
-        // TODO: Implement flip() method.
+        return new static(array_flip($this->items));
     }
 
     /**
      * The forget method removes an item from the collection by its key
      * https://laravel.com/docs/8.x/collections#method-forget
      */
-    public function forget()
+    public function forget(int|string $key): static
     {
-        // TODO: Implement forget() method.
+        if ($this->has($key)) {
+            unset($this->items[$key]);
+        }
+        return $this;
     }
 
     /**
@@ -957,7 +965,7 @@ class Collection implements \ArrayAccess
      * so in the following example we will use the values method to reset the keys to consecutively numbered indexes
      * https://laravel.com/docs/8.x/collections#method-sortby
      */
-    public function sortBy()
+    public function sortBy(string|array|callable $key, int $flags = SORT_REGULAR): static
     {
         // TODO: Implement sortBy() method.
     }
@@ -965,7 +973,7 @@ class Collection implements \ArrayAccess
     /**
      * This method has the same signature as the sortBy method, but will sort the collection in the opposite order.
      */
-    public function sortByDesc()
+    public function sortByDesc(string|array|callable $key, int $flags = SORT_REGULAR): static
     {
         // TODO: Implement sortByDesc() method.
     }
@@ -974,7 +982,7 @@ class Collection implements \ArrayAccess
      * This method will sort the collection in the opposite order as the sort method
      * https://laravel.com/docs/8.x/collections#method-sortdesc
      */
-    public function sortDesc()
+    public function sortDesc(): static
     {
         // TODO: Implement sortDesc() method.
     }
@@ -983,7 +991,7 @@ class Collection implements \ArrayAccess
      * The sortKeys method sorts the collection by the keys of the underlying associative array
      * https://laravel.com/docs/8.x/collections#method-sortkeys
      */
-    public function sortKeys()
+    public function sortKeys(): static
     {
         // TODO: Implement sortKeys() method.
     }
@@ -1220,7 +1228,7 @@ class Collection implements \ArrayAccess
      * The static unwrap method returns the collection's underlying items from the given value when applicable
      * https://laravel.com/docs/8.x/collections#method-unwrap
      */
-    public static function unwrap(): static
+    public static function unwrap(mixed $value): static
     {
         // TODO: Implement unwrap() method.
     }
@@ -1305,7 +1313,7 @@ class Collection implements \ArrayAccess
      * The whereIn method removes elements from the collection that do not have a specified item value that is contained within the given array
      * https://laravel.com/docs/8.x/collections#method-wherein
      */
-    public function whereIn()
+    public function whereIn(int|string|callable $key, array $values): static
     {
         // TODO: Implement whereIn() method.
     }
@@ -1332,7 +1340,7 @@ class Collection implements \ArrayAccess
      * The whereNotBetween method filters the collection by determining if a specified item value is outside of a given range
      * https://laravel.com/docs/8.x/collections#method-wherenotbetween
      */
-    public function whereNotBetween()
+    public function whereNotBetween(int|string|callable $key, int|string|\DateTime $from, int|string|\DateTime $to): static
     {
         // TODO: Implement whereNotBetween() method.
     }
@@ -1341,7 +1349,7 @@ class Collection implements \ArrayAccess
      * The whereNotIn method removes elements from the collection that have a specified item value that is not contained within the given array
      * https://laravel.com/docs/8.x/collections#method-wherenotin
      */
-    public function whereNotIn()
+    public function whereNotIn(int|string|callable $key, array $values): static
     {
         // TODO: Implement whereNotIn() method.
     }
@@ -1359,7 +1367,7 @@ class Collection implements \ArrayAccess
      * The whereNotNull method returns items from the collection where the given key is not null
      * https://laravel.com/docs/8.x/collections#method-wherenotnull
      */
-    public function whereNotNull()
+    public function whereNotNull(int|string|callable $key): static
     {
         // TODO: Implement whereNotNull() method.
     }
@@ -1368,7 +1376,7 @@ class Collection implements \ArrayAccess
      * The whereNull method returns items from the collection where the given key is null
      * https://laravel.com/docs/8.x/collections#method-wherenull
      */
-    public function whereNull()
+    public function whereNull(int|string|callable $key): static
     {
         // TODO: Implement whereNull() method.
     }
