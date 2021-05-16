@@ -618,7 +618,7 @@ class Collection implements \ArrayAccess
      * the given items's value will overwrite the value in the original collection
      * https://laravel.com/docs/8.x/collections#method-merge
      */
-    public function merge()
+    public function merge(array|Collection $collection): static
     {
         // TODO: Implement merge() method.
     }
@@ -638,7 +638,7 @@ class Collection implements \ArrayAccess
      * The min method returns the minimum value of a given key
      * https://laravel.com/docs/8.x/collections#method-min
      */
-    public function min()
+    public function min(string|null $key = null): int|float
     {
         // TODO: Implement min() method.
     }
@@ -647,7 +647,7 @@ class Collection implements \ArrayAccess
      * The mode method returns the mode value of a given key
      * https://laravel.com/docs/8.x/collections#method-mode
      */
-    public function mode()
+    public function mode(string|null $key = null): static
     {
         // TODO: Implement mode() method.
     }
@@ -674,7 +674,7 @@ class Collection implements \ArrayAccess
      * The only method returns the items in the collection with the specified keys
      * https://laravel.com/docs/8.x/collections#method-only
      */
-    public function only()
+    public function only(array $keys): static
     {
         // TODO: Implement only() method.
     }
@@ -694,8 +694,9 @@ class Collection implements \ArrayAccess
     /**
      * The partition method may be combined with PHP array destructuring to separate elements that pass a given truth test from those that do not
      * https://laravel.com/docs/8.x/collections#method-partition
+     * @return static[]
      */
-    public function partition()
+    public function partition(callable $test): array
     {
         // TODO: Implement partition() method.
     }
@@ -704,18 +705,18 @@ class Collection implements \ArrayAccess
      * The pipe method passes the collection to the given closure and returns the result of the executed closure
      * https://laravel.com/docs/8.x/collections#method-pipe
      */
-    public function pipe()
+    public function pipe(callable $callback): mixed
     {
-        // TODO: Implement pipe() method.
+        return $callback($this);
     }
 
     /**
      * The pipeInto method creates a new instance of the given class and passes the collection into the constructor
      * https://laravel.com/docs/8.x/collections#method-pipeinto
      */
-    public function pipeInto()
+    public function pipeInto(string $class)
     {
-        // TODO: Implement pipeInto() method.
+        return new $class($this);
     }
 
     /**

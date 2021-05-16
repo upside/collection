@@ -707,9 +707,18 @@ class CollectionTest extends TestCase
 
     }
 
+    /**
+     * @depends testToArray
+     */
     public function testMerge(): void
     {
+        $collection = new Collection(['product_id' => 1, 'price' => 100]);
+        $merged = $collection->merge(['price' => 200, 'discount' => false]);
+        self::assertEquals(['product_id' => 1, 'price' => 200, 'discount' => false], $merged->toArray());
 
+        $collection = new Collection(['Desk', 'Chair']);
+        $merged = $collection->merge(['Bookcase', 'Door']);
+        self::assertEquals(['Desk', 'Chair', 'Bookcase', 'Door'], $merged->toArray());
     }
 
     /**
@@ -730,12 +739,31 @@ class CollectionTest extends TestCase
 
     public function testMin(): void
     {
+        $collection = new Collection([['foo' => 10], ['foo' => 20]]);
+        self::assertEquals(10, $collection->min('foo'));
 
+        $collection = new Collection([1, 2, 3, 4, 5]);
+        self::assertEquals(1, $collection->min());
     }
 
+    /**
+     * @depends testToArray
+     */
     public function testMode(): void
     {
+        $collection = new Collection([
+            ['foo' => 10],
+            ['foo' => 10],
+            ['foo' => 20],
+            ['foo' => 40]
+        ]);
+        self::assertEquals([10], $collection->mode()->toArray());
 
+        $collection = new Collection([1, 1, 2, 4]);
+        self::assertEquals([1], $collection->mode()->toArray());
+
+        $collection = new Collection([1, 1, 2, 2]);
+        self::assertEquals([1, 2], $collection->mode()->toArray());
     }
 
     /**
@@ -748,9 +776,19 @@ class CollectionTest extends TestCase
         self::assertEquals(['a', 'e'], $collection->nth(4)->values()->all());
     }
 
+    /**
+     * @depends testToArray
+     */
     public function testOnly(): void
     {
-
+        $collection = new Collection([
+            'product_id' => 1,
+            'name' => 'Desk',
+            'price' => 100,
+            'discount' => false
+        ]);
+        $filtered = $collection->only(['product_id', 'name']);
+        self::assertEquals(['product_id' => 1, 'name' => 'Desk'], $filtered->toArray());
     }
 
     /**
@@ -767,19 +805,43 @@ class CollectionTest extends TestCase
         self::assertEquals([0, 0, 'A', 'B', 'C'], $filtered->all());
     }
 
+    /**
+     * @depends testToArray
+     */
     public function testPartition(): void
     {
+        $collection = new Collection([1, 2, 3, 4, 5, 6]);
 
+        [$underThree, $equalOrAboveThree] = $collection->partition(function ($i) {
+            return $i < 3;
+        });
+
+        self::assertEquals([1, 2], $underThree->toArray());
+        self::assertEquals([3, 4, 5, 6], $equalOrAboveThree->toArray());
     }
 
+    /**
+     * @depends testSum
+     */
     public function testPipe(): void
     {
-
+        $collection = new Collection([1, 2, 3]);
+        $piped = $collection->pipe(function (Collection $collection): int|float {
+            return $collection->sum();
+        });
+        self::assertEquals(6, $piped);
     }
 
+    /**
+     * @depends testToArray
+     */
     public function testPipeInto(): void
     {
+        $collection = new Collection([1, 2, 3]);
+        $resource = $collection->pipeInto(ResourceCollection::class);
+        $resource->collection->toArray();
 
+        self::assertEquals([1, 2, 3], $resource->collection->toArray());
     }
 
     /**
