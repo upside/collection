@@ -461,7 +461,7 @@ class Collection implements \ArrayAccess
      * Using this method's second argument, you may also specify how the final element should be appended to the string
      * https://laravel.com/docs/8.x/collections#method-join
      */
-    public function join()
+    public function join(string $separator, string|null $end = null): string
     {
         // TODO: Implement join() method.
     }
@@ -607,7 +607,7 @@ class Collection implements \ArrayAccess
      * The median method returns the median value of a given key
      * https://laravel.com/docs/8.x/collections#method-median
      */
-    public function median()
+    public function median(string|null $key = null): int|float
     {
         // TODO: Implement median() method.
     }
@@ -806,7 +806,7 @@ class Collection implements \ArrayAccess
      * passing the result of each iteration into the subsequent iteration
      * https://laravel.com/docs/8.x/collections#method-reduce
      */
-    public function reduce()
+    public function reduce(callable $callback, mixed $firstCarry = null): mixed
     {
         // TODO: Implement reduce() method.
     }
@@ -816,7 +816,7 @@ class Collection implements \ArrayAccess
      * The closure should return true if the item should be removed from the resulting collection
      * https://laravel.com/docs/8.x/collections#method-reject
      */
-    public function reject()
+    public function reject(callable $test): static
     {
         // TODO: Implement reject() method.
     }

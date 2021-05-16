@@ -55,6 +55,9 @@ class CollectionTest extends TestCase
         self::assertEquals([['A', 'A'], ['B', 'B'], ['C', 'C', 'C'], ['D']], $chunks->toArray());
     }
 
+    /**
+     * @depends testToArray
+     */
     public function testCollapse(): void
     {
         $collection = new Collection([
@@ -64,22 +67,21 @@ class CollectionTest extends TestCase
         ]);
 
         $collapsed = $collection->collapse();
-
-        self::assertEquals([1, 2, 3, 4, 5, 6, 7, 8, 9], $collapsed->all());
+        self::assertEquals([1, 2, 3, 4, 5, 6, 7, 8, 9], $collapsed->toArray());
     }
 
     /**
-     * @depends testAll
+     * @depends testToArray
      */
     public function testCombine(): void
     {
         $collection = new Collection(['name', 'age']);
         $combined = $collection->combine(['George', 29]);
-        self::assertEquals(['name' => 'George', 'age' => 29], $combined->all());
+        self::assertEquals(['name' => 'George', 'age' => 29], $combined->toArray());
     }
 
     /**
-     * @depends testAll
+     * @depends testToArray
      */
     public function testCollect(): void
     {
@@ -87,20 +89,20 @@ class CollectionTest extends TestCase
 
         $collectionB = $collectionA->collect();
 
-        self::assertEquals([1, 2, 3], $collectionA->all());
-        self::assertEquals([1, 2, 3], $collectionB->all());
-        self::assertEquals($collectionA->all(), $collectionB->all());
+        self::assertEquals([1, 2, 3], $collectionA->toArray());
+        self::assertEquals([1, 2, 3], $collectionB->toArray());
+        self::assertEquals($collectionA->toArray(), $collectionB->toArray());
     }
 
     /**
-     * @depends testAll
+     * @depends testToArray
      */
     public function testConcat(): void
     {
         $collection = new Collection(['John Doe']);
         $concatenated = $collection->concat(['Jane Doe'])->concat(['name' => 'Johnny Doe']);
-        self::assertEquals(['John Doe'], $collection->all());
-        self::assertEquals(['John Doe', 'Jane Doe', 'Johnny Doe'], $concatenated->all());
+        self::assertEquals(['John Doe'], $collection->toArray());
+        self::assertEquals(['John Doe', 'Jane Doe', 'Johnny Doe'], $concatenated->toArray());
     }
 
     public function testContains(): void
@@ -590,7 +592,20 @@ class CollectionTest extends TestCase
 
     public function testJoin(): void
     {
+        $collection = new Collection(['a', 'b', 'c']);
+        self::assertEquals('a, b, c', $collection->join(', '));
 
+        $collection = new Collection(['a', 'b', 'c']);
+        self::assertEquals('a, b, and c', $collection->join(', ', ', and '));
+
+        $collection = new Collection(['a', 'b']);
+        self::assertEquals('a and b', $collection->join(', ', ' and '));
+
+        $collection = new Collection(['a']);
+        self::assertEquals('a', $collection->join(', ', ' and '));
+
+        $collection = new Collection([]);
+        self::assertEquals('', $collection->join(', ', ' and '));
     }
 
     /**
@@ -660,9 +675,14 @@ class CollectionTest extends TestCase
         self::assertEquals([2, 4, 6, 8, 10], $multiplied->all());
     }
 
+    /**
+     * @depends testToArray
+     */
     public function testMapInto(): void
     {
-
+        $collection = new Collection(['USD', 'EUR', 'GBP']);
+        $currencies = $collection->mapInto(Currency::class);
+        self::assertEquals([new Currency('USD'), new Currency('EUR'), new Currency('GBP')], $currencies->toArray());
     }
 
     /**
@@ -704,7 +724,16 @@ class CollectionTest extends TestCase
 
     public function testMedian(): void
     {
+        $collection = new Collection([
+            ['foo' => 10],
+            ['foo' => 10],
+            ['foo' => 20],
+            ['foo' => 40]
+        ]);
+        self::assertEquals(15, $collection->median('foo'));
 
+        $collection = new Collection([1, 1, 2, 4]);
+        self::assertEquals(1.5, $collection->median());
     }
 
     /**
@@ -918,24 +947,24 @@ class CollectionTest extends TestCase
     }
 
     /**
-     * @depends testAll
+     * @depends testToArray
      */
     public function testPush(): void
     {
         $collection = new Collection([1, 2, 3, 4]);
         $collection->push(5);
 
-        self::assertEquals([1, 2, 3, 4, 5], $collection->all());
+        self::assertEquals([1, 2, 3, 4, 5], $collection->toArray());
     }
 
     /**
-     * @depends testAll
+     * @depends testToArray
      */
     public function testPut(): void
     {
         $collection = new Collection(['product_id' => 1, 'name' => 'Desk']);
         $collection->put('price', 100);
-        self::assertEquals(['product_id' => 1, 'name' => 'Desk', 'price' => 100], $collection->all());
+        self::assertEquals(['product_id' => 1, 'name' => 'Desk', 'price' => 100], $collection->toArray());
     }
 
     public function testRandom(): void
@@ -945,12 +974,48 @@ class CollectionTest extends TestCase
 
     public function testReduce(): void
     {
+        $collection = new Collection([1, 2, 3]);
 
+        $total = $collection->reduce(function ($carry, $item) {
+            return $carry + $item;
+        });
+        self::assertEquals(6, $total);
+
+        $total = $collection->reduce(function ($carry, $item) {
+            return $carry + $item;
+        }, 4);
+        self::assertEquals(10, $total);
+
+        $collection = new Collection([
+            'usd' => 1400,
+            'gbp' => 1200,
+            'eur' => 1000,
+        ]);
+
+        $ratio = [
+            'usd' => 1,
+            'gbp' => 1.37,
+            'eur' => 1.22,
+        ];
+
+        $total = $collection->reduce(function ($carry, $value, $key) use ($ratio) {
+            return $carry + ($value * $ratio[$key]);
+        });
+        self::assertEquals(4264, $total);
     }
 
+    /**
+     * @depends testToArray
+     */
     public function testReject(): void
     {
+        $collection = new Collection([1, 2, 3, 4]);
 
+        $filtered = $collection->reject(function ($value, $key) {
+            return $value > 2;
+        });
+
+        self::assertEquals([1, 2], $filtered->toArray());
     }
 
     /**
@@ -1095,7 +1160,6 @@ class CollectionTest extends TestCase
         ]);
 
         self::assertFalse($collection->some('product', 'Bookcase'));
-
     }
 
     /**
@@ -1846,5 +1910,4 @@ class CollectionTest extends TestCase
             [new Collection([['foo' => 10], ['foo' => 10], ['foo' => 20], ['foo' => 40]]), 20, 'foo'],
         ];
     }
-
 }
