@@ -209,12 +209,13 @@ class CollectionTest extends TestCase
 
     /**
      * @depends testToArray
+     * @depends testValues
      */
     public function testDiff(): void
     {
         $collection = new Collection([1, 2, 3, 4, 5]);
         $diff = $collection->diff([2, 4, 6, 8]);
-        self::assertEquals([1, 3, 5], $diff->toArray());
+        self::assertEquals([1, 3, 5], $diff->values()->toArray());
     }
 
     /**

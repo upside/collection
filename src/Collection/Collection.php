@@ -160,7 +160,7 @@ class Collection implements \ArrayAccess
     {
         if (is_callable($key)) {
             foreach ($this->items as $k => $v) {
-                if ($key($v, $k)) {
+                if ($key($v, $k) === true) {
                     return true;
                 }
             }
@@ -172,10 +172,7 @@ class Collection implements \ArrayAccess
         }
 
         if ($this->has($key)) {
-            if ($strict) {
-                return $this->items[$key] === $value;
-            }
-            return $this->items[$key] == $value;
+            return $strict ? $this->items[$key] === $value : $this->items[$key] == $value;
         }
         return false;
     }
@@ -220,7 +217,7 @@ class Collection implements \ArrayAccess
      */
     public function diff(Collection|array $items): static
     {
-        // TODO: Implement diff() method.
+        return new static(array_diff($this->items, $items));
     }
 
     /**
@@ -230,7 +227,7 @@ class Collection implements \ArrayAccess
      */
     public function diffAssoc(Collection|array $items): static
     {
-        // TODO: Implement diffAssoc() method.
+        return new static(array_diff_assoc($this->items, $items));
     }
 
     /**
@@ -238,9 +235,9 @@ class Collection implements \ArrayAccess
      * This method will return the key / value pairs in the original collection that are not present in the given collection
      * https://laravel.com/docs/8.x/collections#method-diffkeys
      */
-    public function diffKeys(Collection|array $arr): static
+    public function diffKeys(Collection|array $items): static
     {
-        // TODO: Implement diffKeys() method.
+        return new static(array_diff_key($this->items, $items));
     }
 
     /**
