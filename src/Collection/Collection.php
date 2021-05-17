@@ -308,10 +308,16 @@ class Collection implements \ArrayAccess
      */
     public function except(array $keys): static
     {
+        $totalKeys = count($keys);
+        $found = 0;
         $result = new static();
         foreach ($this->items as $key => $item) {
             if (!in_array($key, $keys, true)) {
                 $result->put($key, $item);
+                $found++;
+            }
+            if ($totalKeys === $found) {
+                break;
             }
         }
         return $result;
@@ -323,7 +329,7 @@ class Collection implements \ArrayAccess
      */
     public function filter(callable|null $filter = null): static
     {
-        // TODO: Implement filter() method.
+        return new static(array_filter($this->items, $filter, ARRAY_FILTER_USE_BOTH));
     }
 
     /**
@@ -392,7 +398,11 @@ class Collection implements \ArrayAccess
      */
     public function forPage(int $page, int $size): static
     {
-        // TODO: Implement forPage() method.
+        if ($page > 0) {
+            return $this->slice(($page - 1) * $size, $size);
+        }
+        return $this->slice($page * $size, $size);
+
     }
 
     /**
@@ -699,7 +709,13 @@ class Collection implements \ArrayAccess
      */
     public function only(array $keys): static
     {
-        // TODO: Implement only() method.
+        $result = new static();
+        foreach ($keys as $key) {
+            if ($this->has($key)) {
+                $result->put($key, $this->items[$key]);
+            }
+        }
+        return $result;
     }
 
     /**
@@ -834,7 +850,7 @@ class Collection implements \ArrayAccess
      */
     public function reduce(callable $callback, mixed $firstCarry = null): mixed
     {
-        // TODO: Implement reduce() method.
+        return array_reduce($this->items, $callback, $firstCarry);
     }
 
     /**
@@ -844,7 +860,13 @@ class Collection implements \ArrayAccess
      */
     public function reject(callable $test): static
     {
-        // TODO: Implement reject() method.
+        $result = new static();
+        foreach ($this->items as $key => $item) {
+            if ($test($item, $key) === false) {
+                $result->put($key, $item);
+            }
+        }
+        return $result;
     }
 
     /**
@@ -1069,12 +1091,10 @@ class Collection implements \ArrayAccess
     public function sum(int|string|callable|null $key = null): int|float
     {
         $result = 0;
-
         $retriever = $this->valueRetriever($key);
         foreach ($this->items as $item) {
             $result += $retriever($item);
         }
-
         return $result;
     }
 

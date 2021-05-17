@@ -336,6 +336,7 @@ class CollectionTest extends TestCase
 
     /**
      * @depends testToArray
+     * @depends testValues
      */
     public function testExcept(): void
     {
@@ -350,10 +351,10 @@ class CollectionTest extends TestCase
         $filtered = $collection->filter(function ($value, $key) {
             return $value > 2;
         });
-        self::assertEquals([3, 4], $filtered->toArray());
+        self::assertEquals([3, 4], $filtered->values()->toArray());
 
         $collection = new Collection([1, 2, 3, null, false, '', 0, []]);
-        self::assertEquals([1, 2, 3], $collection->filter()->toArray());
+        self::assertEquals([1, 2, 3], $collection->filter()->values()->toArray());
     }
 
     public function testFirst(): void
@@ -467,6 +468,15 @@ class CollectionTest extends TestCase
         $collection = new Collection([1, 2, 3, 4, 5, 6, 7, 8, 9]);
         $chunk = $collection->forPage(2, 3);
         self::assertEquals([4, 5, 6], $chunk->toArray());
+
+        $chunk = $collection->forPage(1, 3);
+        self::assertEquals([1, 2, 3], $chunk->toArray());
+
+        $chunk = $collection->forPage(-1, 3);
+        self::assertEquals([7, 8, 9], $chunk->toArray());
+
+        $chunk = $collection->forPage(0, 3);
+        self::assertEquals([1, 2, 3], $chunk->toArray());
     }
 
     public function testGet(): void
@@ -989,9 +999,14 @@ class CollectionTest extends TestCase
         self::assertEquals(['product_id' => 1, 'name' => 'Desk', 'price' => 100], $collection->toArray());
     }
 
+    /**
+     *
+     */
     public function testRandom(): void
     {
-
+        $collection = new Collection([1, 2, 3, 4, 5, 6, 7, 8, 9]);
+        self::assertEquals(2, $collection->random(2)->count());
+        self::assertIsInt($collection->random());
     }
 
     public function testReduce(): void
