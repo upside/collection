@@ -17,7 +17,7 @@ class Collection implements \ArrayAccess
     /**
      * @psalm-param array<TKey, TValue> $items
      */
-    public function __construct(array $items = [])
+    public function __construct(Collection|array $items = [])
     {
         $this->items = $items;
     }
@@ -46,7 +46,6 @@ class Collection implements \ArrayAccess
         if ($count > 0) {
             return $this->sum($key) / $count;
         }
-
         return 0;
     }
 
@@ -104,7 +103,7 @@ class Collection implements \ArrayAccess
      * The combine method combines the values of the collection, as keys, with the values of another array or collection
      * https://laravel.com/docs/8.x/collections#method-combine
      */
-    public function combine(array $arr): static
+    public function combine(Collection|array $arr): static
     {
         $result = new static();
         $keys = $this->values();
@@ -129,7 +128,7 @@ class Collection implements \ArrayAccess
      *  The concat method appends the given array or collection's values onto the end of another collection
      * https://laravel.com/docs/8.x/collections#method-concat
      */
-    public function concat(array $arr): static
+    public function concat(Collection|array $arr): static
     {
         $result = new static($this->items);
         foreach ($arr as $item) {
@@ -143,18 +142,42 @@ class Collection implements \ArrayAccess
      * You may also pass a closure to the contains to determine if an element exists in the collection matching a given truth test
      * https://laravel.com/docs/8.x/collections#method-contains
      */
-    public function contains(string|callable $key, mixed $value = null): bool
+    public function contains(int|string|callable $key, mixed $value = null): bool
     {
-        // TODO: Implement contains() method.
+        return $this->cn($key, $value, false);
     }
 
     /**
      * This method has the same signature as the contains method; however, all values are compared using "strict" comparisons.
      * https://laravel.com/docs/8.x/collections#method-containsstrict
      */
-    public function containsStrict()
+    public function containsStrict(int|string|callable $key, mixed $value = null): bool
     {
-        // TODO: Implement containsStrict() method.
+        return $this->cn($key, $value);
+    }
+
+    private function cn(int|string|callable $key, mixed $value = null, bool $strict = true): bool
+    {
+        if (is_callable($key)) {
+            foreach ($this->items as $k => $v) {
+                if ($key($v, $k)) {
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        if (is_null($value)) {
+            return in_array($key, $this->items, $strict);
+        }
+
+        if ($this->has($key)) {
+            if ($strict) {
+                return $this->items[$key] === $value;
+            }
+            return $this->items[$key] == $value;
+        }
+        return false;
     }
 
     /**
@@ -185,7 +208,7 @@ class Collection implements \ArrayAccess
      * https://laravel.com/docs/8.x/collections#method-crossjoin
      *
      */
-    public function crossJoin(array ...$items): static
+    public function crossJoin(Collection|array ...$items): static
     {
         // TODO: Implement crossJoin() method.
     }
@@ -195,7 +218,7 @@ class Collection implements \ArrayAccess
      * This method will return the values in the original collection that are not present in the given collection
      * https://laravel.com/docs/8.x/collections#method-diff
      */
-    public function diff(array $items): static
+    public function diff(Collection|array $items): static
     {
         // TODO: Implement diff() method.
     }
@@ -205,7 +228,7 @@ class Collection implements \ArrayAccess
      * This method will return the key / value pairs in the original collection that are not present in the given collection
      * https://laravel.com/docs/8.x/collections#method-diffassoc
      */
-    public function diffAssoc(array $items): static
+    public function diffAssoc(Collection|array $items): static
     {
         // TODO: Implement diffAssoc() method.
     }
@@ -215,7 +238,7 @@ class Collection implements \ArrayAccess
      * This method will return the key / value pairs in the original collection that are not present in the given collection
      * https://laravel.com/docs/8.x/collections#method-diffkeys
      */
-    public function diffKeys(array $arr): static
+    public function diffKeys(Collection|array $arr): static
     {
         // TODO: Implement diffKeys() method.
     }
@@ -423,7 +446,7 @@ class Collection implements \ArrayAccess
      * The resulting collection will preserve the original collection's keys
      * https://laravel.com/docs/8.x/collections#method-intersect
      */
-    public function intersect(array $items): static
+    public function intersect(Collection|array $items): static
     {
         // TODO: Implement intersect() method.
     }
@@ -618,7 +641,7 @@ class Collection implements \ArrayAccess
      * the given items's value will overwrite the value in the original collection
      * https://laravel.com/docs/8.x/collections#method-merge
      */
-    public function merge(array|Collection $collection): static
+    public function merge(Collection|array $collection): static
     {
         // TODO: Implement merge() method.
     }
@@ -629,7 +652,7 @@ class Collection implements \ArrayAccess
      * then the values for these keys are merged together into an array, and this is done recursively
      * https://laravel.com/docs/8.x/collections#method-mergerecursive
      */
-    public function mergeRecursive(array $items): static
+    public function mergeRecursive(Collection|array $items): static
     {
         // TODO: Implement mergeRecursive() method.
     }
@@ -796,9 +819,12 @@ class Collection implements \ArrayAccess
      * The random method returns a random item from the collection
      * https://laravel.com/docs/8.x/collections#method-random
      */
-    public function random()
+    public function random(int $items = 1): mixed
     {
-        // TODO: Implement random() method.
+        if ($items > 1) {
+            return $this->only(array_rand($this->items, $items));
+        }
+        return $this->get(array_rand($this->items));
     }
 
     /**
@@ -827,7 +853,7 @@ class Collection implements \ArrayAccess
      * the replace method will also overwrite items in the collection that have matching numeric keys
      * https://laravel.com/docs/8.x/collections#method-replace
      */
-    public function replace(array $res): static
+    public function replace(Collection|array $res): static
     {
         $result = new static($this->items);
         foreach ($res as $key => $value) {
@@ -840,7 +866,7 @@ class Collection implements \ArrayAccess
      * This method works like replace, but it will recur into arrays and apply the same replacement process to the inner values
      * https://laravel.com/docs/8.x/collections#method-replacerecursive
      */
-    public function replaceRecursive()
+    public function replaceRecursive(Collection|array $res): static
     {
         // TODO: Implement replaceRecursive() method.
     }
@@ -885,9 +911,10 @@ class Collection implements \ArrayAccess
      * The shuffle method randomly shuffles the items in the collection
      * https://laravel.com/docs/8.x/collections#method-shuffle
      */
-    public function shuffle()
+    public function shuffle(): static
     {
-        // TODO: Implement shuffle() method.
+        shuffle($this->items);
+        return $this;
     }
 
     /**
@@ -1186,16 +1213,22 @@ class Collection implements \ArrayAccess
      */
     public function unique(): static
     {
-        return new static(array_unique($this->items, SORT_REGULAR));
+        return new static(array_unique($this->items));
     }
 
     /**
      * This method has the same signature as the unique method; however, all values are compared using "strict" comparisons.
      * https://laravel.com/docs/8.x/collections#method-uniquestrict
      */
-    public function uniqueStrict()
+    public function uniqueStrict(): static
     {
-        // TODO: Implement uniqueStrict() method.
+        $result = new static();
+        foreach ($this->items as $key => $item) {
+            if (!$result->contains($item)) {
+                $result->put($key, $item);
+            }
+        }
+        return $result;
     }
 
     /**
@@ -1403,7 +1436,7 @@ class Collection implements \ArrayAccess
      * The zip method merges together the values of the given array with the values of the original collection at their corresponding index
      * https://laravel.com/docs/8.x/collections#method-zip
      */
-    public function zip(array $arr): static
+    public function zip(Collection|array $arr): static
     {
         $result = new static();
         foreach ($this->values()->all() as $index => $item) {

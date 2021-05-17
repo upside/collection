@@ -126,7 +126,29 @@ class CollectionTest extends TestCase
 
     public function testContainsStrict(): void
     {
+        $collection = new Collection([1, 2, 3, 4, 5]);
+        self::assertFalse($collection->containsStrict(function ($value) {
+            return $value > 5;
+        }));
 
+        $collection = new Collection(['name' => 'Desk', 'price' => 100]);
+        self::assertTrue($collection->containsStrict('Desk'));
+        self::assertFalse($collection->containsStrict('New York'));
+        self::assertFalse($collection->containsStrict('100'));
+
+        $collection = new Collection([
+            [
+                'product' => 'Desk',
+                'price' => 200,
+            ],
+            [
+                'product' => 'Chair',
+                'price' => 100
+            ],
+        ]);
+
+        self::assertFalse($collection->containsStrict('product', 'Bookcase'));
+        self::assertFalse($collection->containsStrict('price', '100'));
     }
 
     public function testCount(): void
@@ -1029,9 +1051,27 @@ class CollectionTest extends TestCase
         self::assertEquals(['Taylor', 'Abigail', 'James'], $collection->toArray());
     }
 
+    /**
+     * @depends testToArray
+     */
     public function testReplaceRecursive(): void
     {
+        $collection = new Collection([
+            'Taylor',
+            'Abigail',
+            [
+                'James',
+                'Victoria',
+                'Finn'
+            ]
+        ]);
 
+        $replaced = $collection->replaceRecursive([
+            'Charlie',
+            2 => [1 => 'King']
+        ]);
+
+        self::assertEquals(['Charlie', 'Abigail', ['James', 'King', 'Finn']], $replaced->toArray());
     }
 
     /**
@@ -1479,12 +1519,26 @@ class CollectionTest extends TestCase
     {
         $collection = new Collection([1, 1, 2, 2, 3, 4, 2]);
         $unique = $collection->unique();
-        self::assertEquals([1, 2, 3, 4], $unique->values()->toArray());
+        self::assertSame([1, 2, 3, 4], $unique->values()->toArray());
+
+        $collection = new Collection([1, '1', '2', 2, 3, 4, 2]);
+        $unique = $collection->unique();
+        self::assertSame([1, '2', 3, 4], $unique->values()->toArray());
     }
 
+    /**
+     * @depends testToArray
+     * @depends testValues
+     */
     public function testUniqueStrict(): void
     {
+        $collection = new Collection([1, 1, 2, 2, 3, 4, 2]);
+        $unique = $collection->uniqueStrict();
+        self::assertSame([1, 2, 3, 4], $unique->values()->toArray());
 
+        $collection = new Collection([1, '1', '2', 2, 3, 4, 2]);
+        $unique = $collection->uniqueStrict();
+        self::assertSame([1, '1', '2', 2, 3, 4], $unique->values()->toArray());
     }
 
     /**
