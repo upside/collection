@@ -848,9 +848,14 @@ class Collection implements \ArrayAccess
      * passing the result of each iteration into the subsequent iteration
      * https://laravel.com/docs/8.x/collections#method-reduce
      */
-    public function reduce(callable $callback, mixed $firstCarry = null): mixed
+    public function reduce(callable $callback, mixed $initial = null): mixed
     {
-        return array_reduce($this->items, $callback, $firstCarry);
+        $result = $initial;
+        foreach ($this->items as $key => $item) {
+            $result = $callback($result, $item, $key);
+        }
+
+        return $result;
     }
 
     /**
