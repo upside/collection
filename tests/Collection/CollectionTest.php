@@ -603,7 +603,15 @@ class CollectionTest extends TestCase
 
     public function testIntersectByKeys(): void
     {
+        $collection = new Collection([
+            'serial' => 'UX301', 'type' => 'screen', 'year' => 2009,
+        ]);
 
+        $intersect = $collection->intersectByKeys([
+            'reference' => 'UX404', 'type' => 'tab', 'year' => 2011,
+        ]);
+
+        self::assertEquals(['type' => 'screen', 'year' => 2009], $intersect->toArray());
     }
 
     public function testIsEmpty(): void

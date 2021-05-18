@@ -335,7 +335,15 @@ class Collection implements \ArrayAccess
      */
     public function first(callable|null $test = null): mixed
     {
-        // TODO: Implement first() method.
+        if (is_null($test)) {
+            return $this->items[array_key_first($this->items)] ?? null;
+        }
+        foreach ($this->items as $key => $item) {
+            if ($test($item, $key)) {
+                return $item;
+            }
+        }
+        return null;
     }
 
     /**
@@ -455,7 +463,8 @@ class Collection implements \ArrayAccess
      */
     public function intersect(Collection|array $items): static
     {
-        // TODO: Implement intersect() method.
+        $items = static::wrap($items);
+        return $this->filter(fn($value, $key) => in_array($value, $items->all(), true));
     }
 
     /**
@@ -463,9 +472,10 @@ class Collection implements \ArrayAccess
      * that are not present in the given array or collection
      * https://laravel.com/docs/8.x/collections#method-intersectbykeys
      */
-    public function intersectByKeys()
+    public function intersectByKeys(Collection|array $items): static
     {
-        // TODO: Implement intersectByKeys() method.
+        $items = static::wrap($items);
+        return $this->filter(fn($value, $key) => $items->has($key));
     }
 
     /**
@@ -547,9 +557,9 @@ class Collection implements \ArrayAccess
      * The static make method creates a new collection instance. See the Creating Collections section.
      * https://laravel.com/docs/8.x/collections#method-make
      */
-    public static function make(mixed $data): static
+    public static function make(mixed $data = null): static
     {
-        return static::wrap($data);
+        return is_null($data) ? new static() : static::wrap($data);
     }
 
     /**
@@ -628,9 +638,9 @@ class Collection implements \ArrayAccess
      * The max method returns the maximum value of a given key
      * https://laravel.com/docs/8.x/collections#method-max
      */
-    public function max(int|string|callable|null $key = null): int|float|string
+    public function max(int|string|callable|null $key = null): mixed
     {
-        // TODO: Implement max() method.
+        return max(is_null($key) ? $this->items : $this->pluck($key)->toArray());
     }
 
     /**
@@ -668,9 +678,9 @@ class Collection implements \ArrayAccess
      * The min method returns the minimum value of a given key
      * https://laravel.com/docs/8.x/collections#method-min
      */
-    public function min(string|null $key = null): int|float
+    public function min(int|string|callable|null $key = null): mixed
     {
-        // TODO: Implement min() method.
+        return min(is_null($key) ? $this->items : $this->pluck($key)->toArray());
     }
 
     /**
