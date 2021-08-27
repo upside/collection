@@ -1,32 +1,30 @@
 <?php
+
 declare(strict_types=1);
 
 namespace Upside\Collection;
 
-/**
- * @template TValue
- * @template TKey
- */
-class Collection implements \ArrayAccess
+use ArrayIterator;
+use Exception;
+use InvalidArgumentException;
+use JsonException;
+
+class Collection implements CollectionInterface
 {
-    /**
-     * @var array<TKey, TValue>
-     */
     private array $items;
 
-    /**
-     * @psalm-param array<TKey, TValue> $items
-     */
-    public function __construct(Collection|array $items = [])
+    public static function make(array $items = []): static
+    {
+        return new static($items);
+    }
+
+    public function __construct(array $items = [])
     {
         $this->items = $items;
     }
 
     /**
-     * The all method returns the underlying array represented by the collection
-     * https://laravel.com/docs/8.x/collections#method-all
-     *
-     * @return array<TKey, TValue>
+     * @inheritDoc
      */
     public function all(): array
     {
@@ -34,453 +32,480 @@ class Collection implements \ArrayAccess
     }
 
     /**
-     * The avg method returns the average value of a given key
-     * https://laravel.com/docs/8.x/collections#method-avg
-     *
-     * @param int|string|callable|null $key
-     * @return float
+     * @inheritDoc
      */
-    public function avg(int|string|callable|null $key = null): float
+    public function avg(callable|int|string $key = null): float
     {
-        $count = $this->count();
-        if ($count > 0) {
-            return $this->sum($key) / $count;
-        }
-        return 0;
+        return $this->count() > 0 ? $this->sum($key) / $this->count() : 0;
     }
 
     /**
-     * Alias for the avg method.
-     * https://laravel.com/docs/8.x/collections#method-average
-     *
-     * @param int|string|callable|null $key
-     * @return float
+     * @inheritDoc
      */
-    public function average(int|string|callable|null $key = null): float
+    public function average(callable|int|string $key = null): float
     {
         return $this->avg($key);
     }
 
     /**
-     * The chunk method breaks the collection into multiple, smaller collections of a given size
-     * https://laravel.com/docs/8.x/collections#method-chunk
-     *
-     * @param int $size
-     * @return $this
+     * @inheritDoc
      */
     public function chunk(int $size): static
     {
-        $chunks = array_chunk($this->items, $size);
-        $result = [];
-        foreach ($chunks as $chunk) {
-            $result[] = new static($chunk);
+        $result = static::make();
+
+        if ($size <= 0) {
+            return $result;
         }
-        return new static($result);
+
+        foreach (array_chunk($this->items, $size, true) as $chunk) {
+            $result->push(static::make($chunk));
+        }
+
+        return $result;
     }
 
     /**
-     * The chunkWhile method breaks the collection into multiple, smaller collections
-     * based on the evaluation of the given callback. The $chunk variable passed to the
-     * closure may be used to inspect the previous element
-     * https://laravel.com/docs/8.x/collections#method-chunkwhile
+     * TODO: Не реализован
+     *
+     * @inheritDoc
      */
-    public function chunkWhile(callable $test): static
+    public function chunkWhile(callable $callback): static
     {
-        // TODO: Implement chunkWhile() method.
+        return $this;
     }
 
-
     /**
-     * The collapse method collapses a collection of arrays into a single, flat collection
-     * https://laravel.com/docs/8.x/collections#method-collapse
+     * @inheritDoc
      */
     public function collapse(): static
     {
-        return new static($this->collapseRecursive($this->items));
-    }
+        $results = [];
 
-    /**
-     * The combine method combines the values of the collection, as keys, with the values of another array or collection
-     * https://laravel.com/docs/8.x/collections#method-combine
-     */
-    public function combine(Collection|array $arr): static
-    {
-        $result = new static();
-        $keys = $this->values();
-        $values = (new static($arr))->values()->all();
-        foreach ($values as $index => $item) {
-            $result->put($keys[$index], $item);
+        foreach ($this->items as $values) {
+            if ($values instanceof static) {
+                $values = $values->all();
+            } elseif (!is_array($values)) {
+                continue;
+            }
+
+            $results[] = $values;
         }
 
-        return $result;
+        return static::make(array_merge([], ...$results));
     }
 
     /**
-     * The collect method returns a new Collection instance with the items currently in the collection
-     * https://laravel.com/docs/8.x/collections#method-collect
+     * @inheritDoc
      */
     public function collect(): static
     {
-        return new static($this->items);
+        return static::make($this->items);
     }
 
     /**
-     *  The concat method appends the given array or collection's values onto the end of another collection
-     * https://laravel.com/docs/8.x/collections#method-concat
+     * @inheritDoc
      */
-    public function concat(Collection|array $arr): static
+    public function combine($values): static
     {
-        $result = new static($this->items);
-        foreach ($arr as $item) {
-            $result->push($item);
-        }
-
-        return $result;
+        return static::make(array_combine($this->values()->all(), array_values($values)));
     }
 
     /**
-     * You may also pass a closure to the contains to determine if an element exists in the collection matching a given truth test
-     * https://laravel.com/docs/8.x/collections#method-contains
+     * TODO: Тут с поддержкой ключей, в интерфейсе без ключей
+     *
+     * @inheritDoc
      */
-    public function contains(int|string|callable $key, mixed $value = null): bool
+    public function concat(CollectionInterface|array $source): static
     {
-        return $this->cn($key, $value, false);
+        return static::make([...$this->items, ...$source]);
     }
 
     /**
-     * This method has the same signature as the contains method; however, all values are compared using "strict" comparisons.
-     * https://laravel.com/docs/8.x/collections#method-containsstrict
+     * @inheritDoc
      */
-    public function containsStrict(int|string|callable $key, mixed $value = null): bool
+    public function contains(mixed $value, callable|int|string|null $key = null, bool $strict = false): bool
     {
-        return $this->cn($key, $value);
-    }
-
-    private function cn(int|string|callable $key, mixed $value = null, bool $strict = true): bool
-    {
-        if (is_callable($key)) {
-            foreach ($this->items as $k => $v) {
-                if ($key($v, $k) === true) {
-                    return true;
-                }
+        $retriever = $this->valueRetriever($key);
+        $comparator = $this->duplicateComparator($strict);
+        foreach ($this->items as $item) {
+            if ($comparator($retriever($item), $value)) {
+                return true;
             }
-            return false;
         }
 
-        if (is_null($value)) {
-            return in_array($key, $this->items, $strict);
-        }
-
-        if ($this->has($key)) {
-            return $strict ? $this->items[$key] === $value : $this->items[$key] == $value;
-        }
         return false;
     }
 
     /**
-     * The count method returns the total number of items in the collection
-     * https://laravel.com/docs/8.x/collections#method-count
-     *
-     * @return int
+     * @inheritDoc
      */
-    public function count(): int
+    public function containsStrict(mixed $value, callable|int|string|null $key = null): bool
     {
-        return count($this->items);
+        return $this->contains($value, $key, true);
     }
 
     /**
-     * The countBy method counts the occurrences of values in the collection.
-     * By default, the method counts the occurrences of every element, allowing you to count certain "types" of elements in the collection
-     * https://laravel.com/docs/8.x/collections#method-countBy
-     *
+     * @inheritDoc
      */
-    public function countBy(callable|null $test = null): static
+    public function countBy(callable|null $callback = null): static
     {
-        // TODO: Implement countBy() method.
+        $countBy = is_null($callback)
+            ? $this->identity()
+            : $this->valueRetriever($callback);
+
+        $counts = [];
+
+        foreach ($this->items as $key => $item) {
+            $group = $countBy($item, $key);
+            if (empty($counts[$group])) {
+                $counts[$group] = 0;
+            }
+            $counts[$group]++;
+        }
+
+        return static::make($counts);
     }
 
     /**
-     * The crossJoin method cross joins the collection's values among the given arrays or collections,
-     * returning a Cartesian product with all possible permutations
-     * https://laravel.com/docs/8.x/collections#method-crossjoin
-     *
+     * @inheritDoc
      */
-    public function crossJoin(Collection|array ...$items): static
+    public function crossJoin(array ...$lists): static
     {
-        // TODO: Implement crossJoin() method.
+        $results = [[]];
+        array_unshift($lists, $this->items);
+        foreach ($lists as $index => $array) {
+            $append = [];
+            foreach ($results as $product) {
+                foreach ($array as $item) {
+                    $product[$index] = $item;
+
+                    $append[] = $product;
+                }
+            }
+            $results = $append;
+        }
+
+        return static::make($results);
     }
 
     /**
-     * The diff method compares the collection against another collection or a plain PHP array based on its values.
-     * This method will return the values in the original collection that are not present in the given collection
-     * https://laravel.com/docs/8.x/collections#method-diff
+     * @inheritDoc
      */
-    public function diff(Collection|array $items): static
+    public function diff(CollectionInterface|array $items): static
     {
-        return new static(array_diff($this->items, $items));
+        return static::make(array_diff($this->items, $items));
     }
 
     /**
-     * The diffAssoc method compares the collection against another collection or a plain PHP array based on its keys and values.
-     * This method will return the key / value pairs in the original collection that are not present in the given collection
-     * https://laravel.com/docs/8.x/collections#method-diffassoc
+     * @inheritDoc
      */
-    public function diffAssoc(Collection|array $items): static
+    public function diffAssoc(CollectionInterface|array $items): static
     {
-        return new static(array_diff_assoc($this->items, $items));
+        return static::make(array_diff_assoc($this->items, $items));
     }
 
     /**
-     * The diffKeys method compares the collection against another collection or a plain PHP array based on its keys.
-     * This method will return the key / value pairs in the original collection that are not present in the given collection
-     * https://laravel.com/docs/8.x/collections#method-diffkeys
+     * @inheritDoc
      */
-    public function diffKeys(Collection|array $items): static
+    public function diffKeys(CollectionInterface|array $items): static
     {
-        return new static(array_diff_key($this->items, $items));
+        return static::make(array_diff_key($this->items, $items));
     }
 
     /**
-     * The duplicates method retrieves and returns duplicate values from the collection
-     * https://laravel.com/docs/8.x/collections#method-duplicates
+     * @inheritDoc
      */
-    public function duplicates(int|string|callable|null $key = null): static
+    public function duplicates(callable|string $callback = null, bool $strict = false): static
     {
-        // TODO: Implement duplicates() method.
+        $items = $this->pluck($callback);
+
+        $uniqueItems = $items->unique(null, $strict);
+
+        $compare = $this->duplicateComparator($strict);
+
+        $duplicates = static::make();
+
+        foreach ($items->all() as $key => $value) {
+            if ($uniqueItems->isNotEmpty() && $compare($value, $uniqueItems->first())) {
+                $uniqueItems->shift();
+            } else {
+                if ($k = $duplicates->search($value)) {
+                    $duplicates->forget($k);
+                }
+                $duplicates->put($key, $value);
+            }
+        }
+
+        return $duplicates;
     }
 
     /**
-     * This method has the same signature as the duplicates method; however, all values are compared using "strict" comparisons.
-     * https://laravel.com/docs/8.x/collections#method-duplicatesstrict
+     * @inheritDoc
      */
-    public function duplicatesStrict()
+    public function duplicatesStrict(callable|string $callback = null): static
     {
-        // TODO: Implement duplicatesStrict() method.
+        return $this->duplicates($callback, true);
     }
 
     /**
-     * The each method iterates over the items in the collection and passes each item to a closure
-     * https://laravel.com/docs/8.x/collections#method-each
+     * @inheritDoc
      */
-    public function each(callable $callback): void
+    public function each(callable $callback): static
     {
         foreach ($this->items as $key => $item) {
             if ($callback($item, $key) === false) {
                 break;
             }
         }
-    }
 
-    /**
-     * The eachSpread method iterates over the collection's items, passing each nested item value into the given callback
-     * https://laravel.com/docs/8.x/collections#method-eachspread
-     */
-    public function eachSpread(callable $callback): static
-    {
-        foreach ($this->items as $item) {
-            if ($callback(...$item) === false) {
-                break;
-            }
-        }
         return $this;
     }
 
     /**
-     * The every method may be used to verify that all elements of a collection pass a given truth test
-     * https://laravel.com/docs/8.x/collections#method-every
+     * @inheritDoc
      */
-    public function every(callable $test): bool
+    public function eachSpread(callable $callback): static
+    {
+        return $this->each(function ($chunk, $key) use ($callback) {
+            $chunk[] = $key;
+
+            return $callback(...$chunk);
+        });
+    }
+
+    /**
+     * @inheritDoc
+     */
+    public function every(callable $callback): bool
     {
         foreach ($this->items as $key => $item) {
-            if (!$test($item, $key)) {
+            if (!$callback($item, $key)) {
                 return false;
             }
         }
+
         return true;
     }
 
     /**
-     * The except method returns all items in the collection except for those with the specified keys
-     * https://laravel.com/docs/8.x/collections#method-except
+     * @inheritDoc
      */
-    public function except(array $keys): static
+    public function except(CollectionInterface|array $keys): static
     {
-        $totalKeys = count($keys);
-        $found = 0;
-        $result = new static();
+        return $this->filter(function ($value, $key) use ($keys) {
+            return !in_array($key, $keys, true);
+        });
+    }
+
+    /**
+     * @inheritDoc
+     */
+    public function filter(callable|null $callback = null): static
+    {
+        if (is_null($callback)) {
+            return static::make(array_filter($this->items));
+        }
+
+        return static::make(array_filter($this->items, $callback, ARRAY_FILTER_USE_BOTH));
+    }
+
+    /**
+     * @inheritDoc
+     */
+    public function first(callable|null $callback = null, mixed $default = null): mixed
+    {
+        if (is_null($callback)) {
+            reset($this->items);
+            $firstKey = key($this->items);
+
+            return is_null($firstKey) ? $default : $this->items[$firstKey];
+        }
+
         foreach ($this->items as $key => $item) {
-            if (!in_array($key, $keys, true)) {
-                $result->put($key, $item);
-                $found++;
-            }
-            if ($totalKeys === $found) {
-                break;
+            if ($callback($item, $key)) {
+                return $item;
             }
         }
+
+        return $default;
+    }
+
+    /**
+     * @inheritDoc
+     */
+    public function firstWhere(callable|int|string|null $key, Operator|null $operator = null, mixed $value = null): mixed
+    {
+        return $this->first($this->operatorForWhere($key, $operator, $value ?? true));
+    }
+
+    /**
+     * @inheritDoc
+     */
+    public function flatMap(callable $callback): static
+    {
+        return $this->map($callback)->collapse();
+    }
+
+    /**
+     * @inheritDoc
+     */
+    public function flatten(int|null $depth = null): static
+    {
+        $result = static::make();
+        foreach ($this->items as $item) {
+            $item = $item instanceof static ? $item->all() : $item;
+            if (!is_array($item)) {
+                $result->push($item);
+            } else {
+                if ($depth === 1) {
+                    $values = array_values($item);
+                } else {
+                    $values = static::make(array_values($item))->flatten($depth - 1)->all();
+                }
+                foreach ($values as $value) {
+                    $result->push($value);
+                }
+            }
+        }
+
         return $result;
     }
 
     /**
-     * The filter method filters the collection using the given callback, keeping only those items that pass a given truth test
-     * https://laravel.com/docs/8.x/collections#method-filter
-     */
-    public function filter(callable|null $filter = null): static
-    {
-        return new static(array_filter($this->items, $filter, ARRAY_FILTER_USE_BOTH));
-    }
-
-    /**
-     * The first method returns the first element in the collection that passes a given truth test
-     * https://laravel.com/docs/8.x/collections#method-first
-     */
-    public function first(callable|null $test = null): mixed
-    {
-        if (is_null($test)) {
-            return $this->items[array_key_first($this->items)] ?? null;
-        }
-        foreach ($this->items as $key => $item) {
-            if ($test($item, $key)) {
-                return $item;
-            }
-        }
-        return null;
-    }
-
-    /**
-     * The firstWhere method returns the first element in the collection with the given key / value pair
-     * https://laravel.com/docs/8.x/collections#method-first-where
-     */
-    public function firstWhere(int|string|callable $key, mixed $val = null, string|callable $comparison = '='): mixed
-    {
-        // TODO: Implement firstWhere() method.
-    }
-
-    /**
-     * The flatMap method iterates through the collection and passes each value to the given closure.
-     * The closure is free to modify the item and return it, thus forming a new collection of modified items.
-     * Then, the array is flattened by one level
-     * https://laravel.com/docs/8.x/collections#method-flatmap
-     */
-    public function flatMap(callable $callback): static
-    {
-        // TODO: Implement flatMap() method.
-    }
-
-    /**
-     * The flatten method flattens a multi-dimensional collection into a single dimension
-     * https://laravel.com/docs/8.x/collections#method-flatten
-     */
-    public function flatten(int|null $dept = null): static
-    {
-        // TODO: Implement flatten() method.
-    }
-
-    /**
-     * The flip method swaps the collection's keys with their corresponding values
-     * https://laravel.com/docs/8.x/collections#method-flip
+     * @inheritDoc
      */
     public function flip(): static
     {
-        return new static(array_flip($this->items));
+        return static::make(array_flip($this->items));
     }
 
     /**
-     * The forget method removes an item from the collection by its key
-     * https://laravel.com/docs/8.x/collections#method-forget
+     * @inheritDoc
      */
-    public function forget(int|string $key): static
+    public function forget($key): static
     {
-        if ($this->has($key)) {
-            unset($this->items[$key]);
-        }
+        unset($this->items[$key]);
+
         return $this;
     }
 
     /**
-     * The forPage method returns a new collection containing the items that would be present on a given page number.
-     * The method accepts the page number as its first argument and the number of items to show per page as its second argument
-     * https://laravel.com/docs/8.x/collections#method-forpage
+     * @inheritDoc
      */
     public function forPage(int $page, int $size): static
     {
         if ($page > 0) {
             return $this->slice(($page - 1) * $size, $size);
         }
-        return $this->slice($page * $size, $size);
 
+        return $this->slice($page * $size, $size);
     }
 
     /**
-     * The get method returns the item at a given key. If the key does not exist, null is returned
-     * https://laravel.com/docs/8.x/collections#method-get
+     * @inheritDoc
      */
-    public function get(int|string|callable $key, mixed $default = null): mixed
+    public function get(callable|int|string|null $key, mixed $default = null): mixed
     {
         return $this->items[$key] ?? $default;
     }
 
     /**
-     * The groupBy method groups the collection's items by a given key
-     * https://laravel.com/docs/8.x/collections#method-groupby
+     * @inheritDoc
      */
-    public function groupBy(string|callable|array $key, bool $preserveKeys = false): static
+    public function groupBy($groupBy, bool $preserveKeys = false): static
     {
-        // TODO: Implement groupBy() method.
-    }
+        if (is_array($groupBy) && !$this->useAsCallable($groupBy)) {
+            $nextGroups = $groupBy;
 
-    /**
-     * The has method determines if a given key exists in the collection
-     * https://laravel.com/docs/8.x/collections#method-has
-     */
-    public function has(int|string|array $key): bool
-    {
-        if (is_array($key)) {
-            foreach ($key as $item) {
-                if (!array_key_exists($item, $this->items)) {
-                    return false;
-                }
-            }
-            return true;
+            $groupBy = array_shift($nextGroups);
         }
-        return array_key_exists($key, $this->items);
+
+        $groupBy = $this->valueRetriever($groupBy);
+
+        $results = [];
+
+        foreach ($this->items as $key => $value) {
+            $groupKeys = $groupBy($value, $key);
+
+            if (!is_array($groupKeys)) {
+                $groupKeys = [$groupKeys];
+            }
+
+            foreach ($groupKeys as $groupKey) {
+                $groupKey = is_bool($groupKey) ? (int)$groupKey : $groupKey;
+
+                if (!array_key_exists($groupKey, $results)) {
+                    $results[$groupKey] = static::make();
+                }
+
+                $results[$groupKey]->offsetSet($preserveKeys ? $key : null, $value);
+            }
+        }
+
+        $result = static::make($results);
+
+        if (!empty($nextGroups)) {
+            return $result->map(function (CollectionInterface $item) use ($nextGroups, $preserveKeys) {
+                return $item->groupBy($nextGroups, $preserveKeys);
+            });
+        }
+
+        return $result;
     }
 
     /**
-     * The implode method joins items in a collection.
-     * Its arguments depend on the type of items in the collection.
-     * If the collection contains arrays or objects, you should pass the key of the attributes you wish to join, and
-     * the "glue" string you wish to place between the values
+     * @inheritDoc
      */
-    public function implode(string $separator, int|string|callable|null $key = null): string
+    public function has(callable|int|string $key): bool
+    {
+        if (!is_array($key)) {
+            $key = [$key];
+        }
+
+        foreach ($key as $item) {
+            if (!array_key_exists($item, $this->items)) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    /**
+     * @inheritDoc
+     */
+    public function implode(string $separator, callable|int|string|null $key = null): string
     {
         return implode($separator, is_null($key) ? $this->items : $this->pluck($key)->all());
     }
 
     /**
-     * The intersect method removes any values from the original collection that are not present in the given array or collection.
-     * The resulting collection will preserve the original collection's keys
-     * https://laravel.com/docs/8.x/collections#method-intersect
+     * @inheritDoc
      */
-    public function intersect(Collection|array $items): static
+    public function intersect(CollectionInterface|array $values): static
     {
-        $items = static::wrap($items);
-        return $this->filter(fn($value, $key) => in_array($value, $items->all(), true));
+        $items = static::make($values);
+
+        return $this->filter(function ($value) use ($items) {
+            return in_array($value, $items->all(), true);
+        });
     }
 
     /**
-     * The intersectByKeys method removes any keys and their corresponding values from the original collection
-     * that are not present in the given array or collection
-     * https://laravel.com/docs/8.x/collections#method-intersectbykeys
+     * @inheritDoc
      */
-    public function intersectByKeys(Collection|array $items): static
+    public function intersectByKeys(CollectionInterface|array $values): static
     {
-        $items = static::wrap($items);
-        return $this->filter(fn($value, $key) => $items->has($key));
+        $items = static::make($values);
+
+        return $this->filter(function ($value, $key) use ($items) {
+            return $items->has($key);
+        });
     }
 
     /**
-     * The isEmpty method returns true if the collection is empty; otherwise, false is returned
-     * https://laravel.com/docs/8.x/collections#method-isempty
+     * @inheritDoc
      */
     public function isEmpty(): bool
     {
@@ -488,8 +513,7 @@ class Collection implements \ArrayAccess
     }
 
     /**
-     * The isNotEmpty method returns true if the collection is not empty; otherwise, false is returned
-     * https://laravel.com/docs/8.x/collections#method-isnotempty
+     * @inheritDoc
      */
     public function isNotEmpty(): bool
     {
@@ -497,259 +521,306 @@ class Collection implements \ArrayAccess
     }
 
     /**
-     * The join method joins the collection's values with a string.
-     * Using this method's second argument, you may also specify how the final element should be appended to the string
-     * https://laravel.com/docs/8.x/collections#method-join
+     * @inheritDoc
      */
-    public function join(string $separator, string|null $end = null): string
+    public function join(string $glue, string $finalGlue = ''): string
     {
-        // TODO: Implement join() method.
+        if ($finalGlue === '') {
+            return $this->implode($glue);
+        }
+
+        $count = $this->count();
+
+        if ($count === 0) {
+            return '';
+        }
+
+        if ($count === 1) {
+            return $this->last();
+        }
+
+        $collection = static::make($this->items);
+
+        $finalItem = $collection->pop();
+
+        return $collection->implode($glue) . $finalGlue . $finalItem;
     }
 
     /**
-     * The keyBy method keys the collection by the given key.
-     * If multiple items have the same key, only the last one will appear in the new collection
-     * https://laravel.com/docs/8.x/collections#method-keyby
-     *
-     * @param int|string|callable $key
-     * @return static
+     * @inheritDoc
      */
-    public function keyBy(int|string|callable $key): static
+    public function keyBy(callable|int|string|null $key): static
     {
-        $result = new static();
+        $result = static::make();
         $retriever = $this->valueRetriever($key);
         foreach ($this->items as $item) {
             $result[$retriever($item)] = $item;
             $result->put($retriever($item), $item);
         }
+
         return $result;
     }
 
     /**
-     * The keys method returns all of the collection's keys
-     * https://laravel.com/docs/8.x/collections#method-keys
+     * @inheritDoc
      */
     public function keys(): static
     {
-        return new static(array_keys($this->items));
+        return static::make(array_keys($this->items));
     }
 
     /**
-     * The last method returns the last element in the collection that passes a given truth test
-     * https://laravel.com/docs/8.x/collections#method-last
+     * @inheritDoc
      */
-    public function last(callable|null $test = null): mixed
+    public function last(callable|null $callback = null): mixed
     {
-        if (is_null($test)) {
-            return $this->isNotEmpty() ? $this->items[array_key_last($this->items)] : null;
+        if (is_null($callback)) {
+            return end($this->items);
         }
-        $last = null;
+
+        $result = null;
+
         foreach ($this->items as $key => $item) {
-            if ($test($item, $key)) {
-                $last = $item;
+            if ($callback($item, $key)) {
+                $result = $item;
+                continue;
             }
-        }
-
-        return $last;
-    }
-
-    /**
-     * The static make method creates a new collection instance. See the Creating Collections section.
-     * https://laravel.com/docs/8.x/collections#method-make
-     */
-    public static function make(mixed $data = null): static
-    {
-        return is_null($data) ? new static() : static::wrap($data);
-    }
-
-    /**
-     * The map method iterates through the collection and passes each value to the given callback.
-     * The callback is free to modify the item and return it, thus forming a new collection of modified items
-     * https://laravel.com/docs/8.x/collections#method-map
-     */
-    public function map(callable $callable): self
-    {
-        $result = new static();
-        foreach ($this->items as $key => $item) {
-            $result->push($callable($item, $key));
+            break;
         }
 
         return $result;
     }
 
     /**
-     * The mapInto() method iterates over the collection,
-     * creating a new instance of the given class by passing the value into the constructor
-     * https://laravel.com/docs/8.x/collections#method-mapinto
+     * @inheritDoc
+     */
+    public function map(callable $callback): static
+    {
+        $result = static::make();
+        foreach ($this->items as $key => $value) {
+            $result->put($key, $callback($value, $key));
+        }
+
+        return $result;
+    }
+
+    /**
+     * @inheritDoc
      */
     public function mapInto(string $class): static
     {
-        $result = new static();
-        foreach ($this->items as $item) {
-            $result->push(new $class($item));
-        }
-        return $result;
+        return $this->map(function ($item) use ($class) {
+            return new $class($item);
+        });
     }
 
     /**
-     * The mapSpread method iterates over the collection's items, passing each nested item value into the given closure.
-     * The closure is free to modify the item and return it, thus forming a new collection of modified items
-     * https://laravel.com/docs/8.x/collections#method-mapspread
+     * @inheritDoc
      */
     public function mapSpread(callable $callback): static
     {
-        $result = new static();
-        foreach ($this->items as $item) {
-            if (is_array($item)) {
-                $result->push($callback(...$item));
-                continue;
+        return $this->map(function ($chunk, $key) use ($callback) {
+            $chunk[] = $key;
+
+            return is_array($chunk) ? $callback(...$chunk) : $callback(...$chunk->values()->all());
+        });
+    }
+
+    /**
+     * @inheritDoc
+     */
+    public function mapToGroups(callable $callback): static
+    {
+        $groups = $this->mapToDictionary($callback);
+
+        return $groups->map([$this, 'make']);
+    }
+
+    public function mapToDictionary(callable $callback): static
+    {
+        $dictionary = [];
+
+        foreach ($this->items as $key => $item) {
+            $pair = $callback($item, $key);
+
+            $key = key($pair);
+
+            $value = reset($pair);
+
+            if (!isset($dictionary[$key])) {
+                $dictionary[$key] = [];
             }
-            if ($item instanceof static) {
-                $result->push($callback(...$item->all()));
-                continue;
-            }
-            $result->push($callback($item));
+
+            $dictionary[$key][] = $value;
         }
+
+        return static::make($dictionary);
+    }
+
+    /**
+     * @inheritDoc
+     */
+    public function mapWithKeys(callable $callback): static
+    {
+        $result = static::make();
+        foreach ($this->items as $key => $value) {
+            $assoc = $callback($value, $key);
+            foreach ($assoc as $mapKey => $mapValue) {
+                $result[$mapKey] = $mapValue;
+                $result->put($mapKey, $mapValue);
+            }
+        }
+
         return $result;
     }
 
     /**
-     * The mapToGroups method groups the collection's items by the given closure.
-     * The closure should return an associative array containing a single
-     * key / value pair, thus forming a new collection of grouped values
-     * https://laravel.com/docs/8.x/collections#method-maptogroups
+     * @inheritDoc
      */
-    public function mapToGroups()
+    public function max(callable|int|string|null $key = null): mixed
     {
-        // TODO: Implement mapToGroups() method.
+        return max(is_null($key) ? $this->items : $this->pluck($key)->all());
     }
 
     /**
-     * The mapWithKeys method iterates through the collection and passes each value to the given callback.
-     * The callback should return an associative array containing a single key / value pair
-     * https://laravel.com/docs/8.x/collections#method-mapwithkeys
+     * @inheritDoc
      */
-    public function mapWithKeys()
+    public function median(callable|int|string|null $key = null): mixed
     {
-        // TODO: Implement mapWithKeys() method.
+        $values = (isset($key) ? $this->pluck($key) : $this)
+            ->filter(function ($item) {
+                return !is_null($item);
+            })->sort()->values();
+
+        $count = $values->count();
+
+        if ($count === 0) {
+            return null;
+        }
+
+        $middle = (int)($count / 2);
+
+        if ($count % 2) {
+            return $values->get($middle);
+        }
+
+        return static::make([
+            $values->get($middle - 1),
+            $values->get($middle),
+        ])->average();
     }
 
     /**
-     * The max method returns the maximum value of a given key
-     * https://laravel.com/docs/8.x/collections#method-max
+     * @inheritDoc
      */
-    public function max(int|string|callable|null $key = null): mixed
+    public function merge(iterable $items): static
     {
-        return max(is_null($key) ? $this->items : $this->pluck($key)->toArray());
+        return static::make(array_merge($this->items, $items));
     }
 
     /**
-     * The median method returns the median value of a given key
-     * https://laravel.com/docs/8.x/collections#method-median
+     * @inheritDoc
      */
-    public function median(string|null $key = null): int|float
+    public function mergeRecursive(CollectionInterface|array $items): static
     {
-        // TODO: Implement median() method.
+        return static::make(array_merge_recursive($this->items, $items));
     }
 
     /**
-     * The merge method merges the given array or collection with the original collection.
-     * If a string key in the given items matches a string key in the original collection,
-     * the given items's value will overwrite the value in the original collection
-     * https://laravel.com/docs/8.x/collections#method-merge
+     * @inheritDoc
      */
-    public function merge(Collection|array $collection): static
-    {
-        // TODO: Implement merge() method.
-    }
-
-    /**
-     * The mergeRecursive method merges the given array or collection recursively with the original collection.
-     * If a string key in the given items matches a string key in the original collection,
-     * then the values for these keys are merged together into an array, and this is done recursively
-     * https://laravel.com/docs/8.x/collections#method-mergerecursive
-     */
-    public function mergeRecursive(Collection|array $items): static
-    {
-        // TODO: Implement mergeRecursive() method.
-    }
-
-    /**
-     * The min method returns the minimum value of a given key
-     * https://laravel.com/docs/8.x/collections#method-min
-     */
-    public function min(int|string|callable|null $key = null): mixed
+    public function min(callable|int|string|null $key = null): mixed
     {
         return min(is_null($key) ? $this->items : $this->pluck($key)->toArray());
     }
 
     /**
-     * The mode method returns the mode value of a given key
-     * https://laravel.com/docs/8.x/collections#method-mode
+     * @inheritDoc
      */
-    public function mode(string|null $key = null): static
+    public function mode(int|string $key = null): array|null
     {
-        // TODO: Implement mode() method.
+        if ($this->count() === 0) {
+            return null;
+        }
+
+        $collection = is_null($key) ? $this : $this->pluck($key);
+
+        $counts = static::make();
+
+        $collection->each(function ($value) use ($counts) {
+            $counts->put($value, $counts->has($value) ? $counts->get($value) + 1 : 1);
+        });
+
+        $sorted = $counts->sort();
+
+        $highestValue = $sorted->last();
+
+        return $sorted
+            ->filter(function ($value) use ($highestValue) { return $value == $highestValue; })
+            ->sort()
+            ->keys()
+            ->all();
     }
 
     /**
-     * The nth method creates a new collection consisting of every n-th element
-     * https://laravel.com/docs/8.x/collections#method-nth
+     * @inheritDoc
      */
-    public function nth(int $index): static
+    public function nth(int $step, int $offset = 0): static
     {
-        $result = new static();
-        $i = 0;
-        foreach ($this->items as $key => $item) {
-            if (($i % $index) === 0) {
-                $result->put($key, $item);
+        $result = static::make();
+        $position = 0;
+
+        foreach ($this->items as $item) {
+            if ($position % $step === $offset) {
+                $result->push($item);
             }
-            $i++;
+            $position++;
         }
 
         return $result;
     }
 
     /**
-     * The only method returns the items in the collection with the specified keys
-     * https://laravel.com/docs/8.x/collections#method-only
+     * @inheritDoc
      */
     public function only(array $keys): static
     {
-        $result = new static();
-        foreach ($keys as $key) {
-            if ($this->has($key)) {
-                $result->put($key, $this->items[$key]);
+        return static::make(array_intersect_key($this->items, array_flip($keys)));
+    }
+
+    /**
+     * @inheritDoc
+     */
+    public function pad(int $size, mixed $value): static
+    {
+        return static::make(array_pad($this->items, $size, $value));
+    }
+
+    /**
+     * @inheritDoc
+     */
+    public function partition(callable|int|string|null $key, Operator|null $operator = null, mixed $value = null): static
+    {
+        $passed = [];
+        $failed = [];
+
+        $callback = is_null($operator) && is_null($value)
+            ? $this->valueRetriever($key)
+            : $this->operatorForWhere($key, $operator ?? Operator::EQUAL, $value ?? true);
+
+        foreach ($this->items as $k => $item) {
+            if ($callback($item, $key)) {
+                $passed[$k] = $item;
+            } else {
+                $failed[$k] = $item;
             }
         }
-        return $result;
+
+        return static::make([static::make($passed), static::make($failed)]);
     }
 
     /**
-     * The pad method will fill the array with the given value until the array reaches the specified size.
-     * This method behaves like the array_pad PHP function.
-     *
-     * To pad to the left, you should specify a negative size.
-     * No padding will take place if the absolute value of the given size is less than or equal to the length of the array
-     */
-    public function pad(int $length, mixed $value): static
-    {
-        return new static(array_pad($this->items, $length, $value));
-    }
-
-    /**
-     * The partition method may be combined with PHP array destructuring to separate elements that pass a given truth test from those that do not
-     * https://laravel.com/docs/8.x/collections#method-partition
-     * @return static[]
-     */
-    public function partition(callable $test): array
-    {
-        // TODO: Implement partition() method.
-    }
-
-    /**
-     * The pipe method passes the collection to the given closure and returns the result of the executed closure
-     * https://laravel.com/docs/8.x/collections#method-pipe
+     * @inheritDoc
      */
     public function pipe(callable $callback): mixed
     {
@@ -757,31 +828,32 @@ class Collection implements \ArrayAccess
     }
 
     /**
-     * The pipeInto method creates a new instance of the given class and passes the collection into the constructor
-     * https://laravel.com/docs/8.x/collections#method-pipeinto
+     * @inheritDoc
      */
-    public function pipeInto(string $class)
+    public function pipeInto(string $class): object
     {
         return new $class($this);
     }
 
     /**
-     * The pluck method retrieves all of the values for a given key
-     * https://laravel.com/docs/8.x/collections#method-pluck
+     *
+     * TODO: почему бы не использовать array_column()
+     *
+     * @inheritDoc
      */
-    public function pluck(int|string|callable $key, int|string|callable|null $index = null): static
+    public function pluck(callable|int|string|null $key = null): static
     {
         $retriever = $this->valueRetriever($key);
-        $result = new static();
+        $result = static::make();
         foreach ($this->items as $item) {
             $result->push($retriever($item));
         }
+
         return $result;
     }
 
     /**
-     * The pop method removes and returns the last item from the collection
-     * https://laravel.com/docs/8.x/collections#method-pop
+     * @inheritDoc
      */
     public function pop(): mixed
     {
@@ -789,71 +861,60 @@ class Collection implements \ArrayAccess
     }
 
     /**
-     * The prepend method adds an item to the beginning of the collection
-     * https://laravel.com/docs/8.x/collections#method-prepend
+     * @inheritDoc
      */
-    public function prepend(mixed $value): static
+    public function prepend($value): static
     {
-        $this->items = [$value, ...$this->items];
+        array_unshift($this->items, $value);
+
         return $this;
     }
 
     /**
-     * The pull method removes and returns an item from the collection by its key
-     * https://laravel.com/docs/8.x/collections#method-pull
-     *
-     * @param int|string $key
-     * @return mixed
+     * @inheritDoc
      */
-    public function pull(int|string $key): mixed
+    public function pull(callable|int|string $key): mixed
     {
-        if (isset($this->items[$key])) {
-            $result = $this->items[$key];
-            unset($this->items[$key]);
-            return $result;
-        }
-        return null;
+        $value = $this->items[$key] ?? null;
+        $this->forget($key);
+
+        return $value;
     }
 
     /**
-     * The push method appends an item to the end of the collection
-     * https://laravel.com/docs/8.x/collections#method-push
-     *
-     * @param TValue $item
-     * @return $this
+     * @inheritDoc
      */
     public function push(mixed $item): static
     {
         $this->items[] = $item;
+
         return $this;
     }
 
     /**
-     * The put method sets the given key and value in the collection
-     * https://laravel.com/docs/8.x/collections#method-put
+     * @inheritDoc
      */
     public function put(int|string $key, mixed $value): static
     {
         $this->items[$key] = $value;
+
         return $this;
     }
 
     /**
-     * The random method returns a random item from the collection
-     * https://laravel.com/docs/8.x/collections#method-random
+     * @inheritDoc
      */
     public function random(int $items = 1): mixed
     {
-        if ($items > 1) {
-            return $this->only(array_rand($this->items, $items));
+        if ($this->count() < $items) {
+            throw new InvalidArgumentException();
         }
-        return $this->get(array_rand($this->items));
+
+        return $items > 1 ? $this->only(array_rand($this->items, $items)) : $this->get(array_rand($this->items, $items));
     }
 
     /**
-     * The reduce method reduces the collection to a single value,
-     * passing the result of each iteration into the subsequent iteration
-     * https://laravel.com/docs/8.x/collections#method-reduce
+     * @inheritDoc
      */
     public function reduce(callable $callback, mixed $initial = null): mixed
     {
@@ -866,75 +927,59 @@ class Collection implements \ArrayAccess
     }
 
     /**
-     * The reject method filters the collection using the given closure.
-     * The closure should return true if the item should be removed from the resulting collection
-     * https://laravel.com/docs/8.x/collections#method-reject
+     * @inheritDoc
      */
-    public function reject(callable $test): static
+    public function reject(callable $callback): static
     {
-        $result = new static();
-        foreach ($this->items as $key => $item) {
-            if ($test($item, $key) === false) {
-                $result->put($key, $item);
-            }
-        }
-        return $result;
+        return $this->filter(function ($value, $key) use ($callback) {
+            return $this->useAsCallable($callback) ? !$callback($value, $key) : $value !== $callback;
+        });
     }
 
     /**
-     * The replace method behaves similarly to merge; however,
-     * in addition to overwriting matching items that have string keys,
-     * the replace method will also overwrite items in the collection that have matching numeric keys
-     * https://laravel.com/docs/8.x/collections#method-replace
+     * @inheritDoc
      */
-    public function replace(Collection|array $res): static
+    public function replace(CollectionInterface|array $items): static
     {
-        $result = new static($this->items);
-        foreach ($res as $key => $value) {
-            $result->put($key, $value);
-        }
-        return $result;
+        return static::make(array_replace($this->items, $items));
     }
 
     /**
-     * This method works like replace, but it will recur into arrays and apply the same replacement process to the inner values
-     * https://laravel.com/docs/8.x/collections#method-replacerecursive
+     * @inheritDoc
      */
-    public function replaceRecursive(Collection|array $res): static
+    public function replaceRecursive(CollectionInterface|array $items): static
     {
-        // TODO: Implement replaceRecursive() method.
+        return static::make(array_replace_recursive($this->items, $items));
     }
 
     /**
-     * The reverse method reverses the order of the collection's items, preserving the original keys
-     * https://laravel.com/docs/8.x/collections#method-reverse
+     * @inheritDoc
      */
     public function reverse(): static
     {
-        return new static(array_reverse($this->items, true));
+        return static::make(array_reverse($this->items, true));
     }
 
     /**
-     * The search method searches the collection for the given value and returns its key if found.
-     * If the item is not found, false is returned
-     * https://laravel.com/docs/8.x/collections#method-search
+     * @inheritDoc
      */
-    public function search(mixed $value, bool $strict = true): int|string|false
+    public function search(mixed $value, bool $strict = true): int|string|bool
     {
-        if (is_callable($value)) {
+        if ($this->useAsCallable($value)) {
             foreach ($this->items as $key => $item) {
                 if ($value($item, $key)) {
                     return $key;
                 }
             }
+
             return false;
         }
+
         return array_search($value, $this->items, $strict);
     }
 
     /**
-     * The shift method removes and returns the first item from the collection
-     * https://laravel.com/docs/8.x/collections#method-shift
+     * @inheritDoc
      */
     public function shift(): mixed
     {
@@ -942,18 +987,17 @@ class Collection implements \ArrayAccess
     }
 
     /**
-     * The shuffle method randomly shuffles the items in the collection
-     * https://laravel.com/docs/8.x/collections#method-shuffle
+     * @inheritDoc
      */
     public function shuffle(): static
     {
         shuffle($this->items);
+
         return $this;
     }
 
     /**
-     * The skip method returns a new collection, with the given number of elements removed from the beginning of the collection
-     * https://laravel.com/docs/8.x/collections#method-skip
+     * @inheritDoc
      */
     public function skip(int $skip): static
     {
@@ -961,581 +1005,525 @@ class Collection implements \ArrayAccess
     }
 
     /**
-     * The skipUntil method skips over items from the collection until the given callback returns true and
-     * then returns the remaining items in the collection as a new collection instance
-     * https://laravel.com/docs/8.x/collections#method-skipuntil
+     * @inheritDoc
      */
-    public function skipUntil(callable $test): static
+    public function skipUntil(callable|int|string $value): static
     {
-        // TODO: Implement skipUntil() method.
+        $callback = $this->useAsCallable($value) ? $value : $this->equality($value);
+
+        return $this->skipWhile($this->negate($callback));
     }
 
     /**
-     * The skipWhile method skips over items from the collection while the given callback returns true and
-     * then returns the remaining items in the collection as a new collection
-     * https://laravel.com/docs/8.x/collections#method-skipwhile
+     * @inheritDoc
      */
-    public function skipWhile(callable $test): static
+    public function skipWhile(callable $callback): static
     {
-        // TODO: Implement skipWhile() method.
+        $result = static::make();
+        $return = false;
+        foreach ($this->items as $key => $item) {
+
+            if ($callback($item)) {
+                $return = true;
+            }
+
+            if ($return) {
+                $result->put($key, $item);
+            }
+        }
+
+        return $result;
     }
 
     /**
-     * The slice method returns a slice of the collection starting at the given index
-     * https://laravel.com/docs/8.x/collections#method-slice
+     * @inheritDoc
      */
     public function slice(int $offset, int|null $length = null): static
     {
-        return new static(array_slice($this->items, $offset, $length));
+        return static::make(array_slice($this->items, $offset, $length));
     }
 
     /**
-     * The sole method returns the first element in the collection that passes a given truth test,
-     * but only if the truth test matches exactly one element
-     * https://laravel.com/docs/8.x/collections#method-sole
+     * @inheritDoc
+     * @throws Exception
      */
-    public function sole()
+    public function sole(callable|int|string|null $key = null, Operator|null $operator = null, mixed $value = null): mixed
     {
-        // TODO: Implement sole() method.
+        $result = $this->filter($this->operatorForWhere($key, $operator ?? Operator::EQUAL, $value ?? true));
+
+        if ($result->isEmpty()) {
+            throw new Exception('Not found');
+        }
+
+        if ($result->count() > 1) {
+            throw new Exception('Found multiple');
+        }
+
+        return $result->first();
     }
 
     /**
-     * Alias for the contains method.
-     * https://laravel.com/docs/8.x/collections#method-some
+     * @inheritDoc
      */
-    public function some(string|callable $key, mixed $value = null): bool
+    public function some(mixed $value, callable|int|string|null $key = null): bool
     {
-        return $this->contains($key, $value);
+        return $this->contains($value, $key);
     }
 
     /**
-     * The sort method sorts the collection.
-     * The sorted collection keeps the original array keys,
-     * so in the following example we will use the values method to reset the keys to consecutively numbered indexes
-     * https://laravel.com/docs/8.x/collections#method-sort
+     * @inheritDoc
      */
-    public function sort(): static
+    public function sort(callable|null $callback = null): static
     {
-        $sorted = $this->items;
-        asort($sorted, SORT_REGULAR);
-        return new static($sorted);
+        $items = $this->items;
+        is_callable($callback) ? uasort($items, $callback) : asort($items, SORT_REGULAR);
+
+        return static::make($items);
     }
 
     /**
-     * The sortBy method sorts the collection by the given key.
-     * The sorted collection keeps the original array keys,
-     * so in the following example we will use the values method to reset the keys to consecutively numbered indexes
-     * https://laravel.com/docs/8.x/collections#method-sortby
+     * TODO: Не реализовано
+     *
+     * @inheritDoc
      */
-    public function sortBy(string|array|callable $key, int $flags = SORT_REGULAR): static
+    public function sortBy($callback, int $options = SORT_REGULAR, bool $descending = false): static
     {
-        // TODO: Implement sortBy() method.
+        return $this;
     }
 
     /**
-     * This method has the same signature as the sortBy method, but will sort the collection in the opposite order.
+     * @inheritDoc
      */
-    public function sortByDesc(string|array|callable $key, int $flags = SORT_REGULAR): static
+    public function sortByDesc(callable $callback, int $options = SORT_REGULAR): static
     {
-        // TODO: Implement sortByDesc() method.
+        return $this->sortBy($callback, $options, true);
     }
 
     /**
-     * This method will sort the collection in the opposite order as the sort method
-     * https://laravel.com/docs/8.x/collections#method-sortdesc
+     * @inheritDoc
      */
-    public function sortDesc(): static
+    public function sortDesc(int $options = SORT_REGULAR): static
     {
-        // TODO: Implement sortDesc() method.
+        $items = $this->items;
+        arsort($items, $options);
+
+        return static::make($items);
     }
 
     /**
-     * The sortKeys method sorts the collection by the keys of the underlying associative array
-     * https://laravel.com/docs/8.x/collections#method-sortkeys
+     * @inheritDoc
      */
-    public function sortKeys(): static
+    public function sortKeys(int $options = SORT_REGULAR, bool $descending = false): static
     {
-        // TODO: Implement sortKeys() method.
+        $items = $this->items;
+        $descending ? krsort($items, $options) : ksort($items, $options);
+
+        return static::make($items);
     }
 
     /**
-     * This method has the same signature as the sortKeys method, but will sort the collection in the opposite order.
-     * https://laravel.com/docs/8.x/collections#method-sortkeysdesc
+     * @inheritDoc
      */
-    public function sortKeysDesc()
+    public function sortKeysDesc(int $options = SORT_REGULAR): static
     {
-        // TODO: Implement sortKeysDesc() method.
+        return $this->sortKeys($options, true);
     }
 
     /**
-     * The splice method removes and returns a slice of items starting at the specified index
-     * https://laravel.com/docs/8.x/collections#method-splice
+     * @inheritDoc
      */
-    public function splice(int $offset, int|null $length = null, mixed $replacement = []): static
+    public function splice(int $offset, int|null $length = null, array $replacement = []): static
     {
-        return new static(array_splice($this->items, $offset, $length, $replacement));
+        if (func_num_args() === 1) {
+            return static::make(array_splice($this->items, $offset));
+        }
+
+        return static::make(array_splice($this->items, $offset, $length, $replacement));
     }
 
     /**
-     * The split method breaks a collection into the given number of groups
-     * https://laravel.com/docs/8.x/collections#method-split
+     * @inheritDoc
      */
-    public function split(int $groups): static
+    public function split(int $numberOfGroups): static
     {
-        $chunkSize = (int)ceil($this->count() / $groups);
-        return $this->chunk($chunkSize);
+        if ($this->isEmpty()) {
+            return static::make();
+        }
+
+        $groups = static::make();
+
+        $groupSize = (int)floor($this->count() / $numberOfGroups);
+
+        $remain = $this->count() % $numberOfGroups;
+
+        $start = 0;
+
+        for ($i = 0; $i < $numberOfGroups; $i++) {
+            $size = $groupSize;
+
+            if ($i < $remain) {
+                $size++;
+            }
+
+            if ($size) {
+                $groups->push(static::make(array_slice($this->items, $start, $size)));
+
+                $start += $size;
+            }
+        }
+
+        return $groups;
     }
 
     /**
-     * The splitIn method breaks a collection into the given number of groups,
-     * filling non-terminal groups completely before allocating the remainder to the final group
-     * https://laravel.com/docs/8.x/collections#method-splitin
+     * @inheritDoc
      */
-    public function splitIn(int $groups): static
+    public function splitIn(int $numberOfGroups): static
     {
-        // TODO: Implement splitIn() method.
+        return $this->chunk((int)ceil($this->count() / $numberOfGroups));
     }
 
     /**
-     * The sum method returns the sum of all items in the collection
-     * https://laravel.com/docs/8.x/collections#method-sum
+     * @inheritDoc
      */
-    public function sum(int|string|callable|null $key = null): int|float
+    public function sum(callable|int|string|null $key = null): mixed
     {
         $result = 0;
         $retriever = $this->valueRetriever($key);
         foreach ($this->items as $item) {
             $result += $retriever($item);
         }
+
         return $result;
     }
 
     /**
-     * The take method returns a new collection with the specified number of items
-     * https://laravel.com/docs/8.x/collections#method-take
+     * @inheritDoc
      */
-    public function take(int $numItems): static
+    public function take(int $limit): static
     {
-        return $this->slice(0, $numItems);
+        if ($limit < 0) {
+            return $this->slice($limit, abs($limit));
+        }
+
+        return $this->slice(0, $limit);
     }
 
     /**
-     * The takeUntil method returns items in the collection until the given callback returns true
-     * https://laravel.com/docs/8.x/collections#method-takeuntil
+     * @inheritDoc
      */
-    public function takeUntil(int|string|callable $test): static
+    public function takeUntil($value): static
     {
-        $result = new static();
-        $isTestCallable = is_callable($test);
-        foreach ($this->items as $key => $item) {
-            if ($isTestCallable) {
-                if (!$test($item, $key)) {
-                    $result->put($key, $item);
-                    continue;
-                }
-                break;
-            }
+        $callback = $this->useAsCallable($value) ? $value : $this->equality($value);
 
-            if ($item === $test) {
-                break;
+        $result = static::make();
+
+        foreach ($this->items as $key => $item) {
+            if ($callback($item, $key)) {
+                return $result;
             }
             $result->put($key, $item);
         }
+
         return $result;
     }
 
     /**
-     * The takeWhile method returns items in the collection until the given callback returns false
-     * https://laravel.com/docs/8.x/collections#method-takewhile
+     * @inheritDoc
      */
-    public function takeWhile(callable $test): static
+    public function takeWhile($value): static
     {
-        $result = new static();
+        $result = static::make();
         foreach ($this->items as $key => $item) {
-            if ($test($item, $key)) {
+            if ($value($item, $key)) {
                 $result->put($key, $item);
                 continue;
             }
             break;
         }
+
         return $result;
     }
 
     /**
-     * The tap method passes the collection to the given callback, allowing you to "tap" into the collection at a specific point
-     * and do something with the items while not affecting the collection itself.
-     * The collection is then returned by the tap method
-     * https://laravel.com/docs/8.x/collections#method-tap
+     * @inheritDoc
      */
     public function tap(callable $callback): static
     {
-        $callback($this);
+        $callback(clone $this);
+
         return $this;
     }
 
     /**
-     * The static times method creates a new collection by invoking the given closure a specified number of times
-     * https://laravel.com/docs/8.x/collections#method-times
-     */
-    public static function times(int $numItems, callable $callback): static
-    {
-        $result = new static();
-        for ($i = 1; $i <= $numItems; $i++) {
-            $result->push($callback($i));
-        }
-        return $result;
-    }
-
-    /**
-     * The toArray method converts the collection into a plain PHP array.
-     * If the collection's values are Eloquent models, the models will also be converted to arrays
-     * https://laravel.com/docs/8.x/collections#method-toarray
+     * @inheritDoc
      */
     public function toArray(): array
     {
-        return $this->toArrayRecursive($this->items);
+        return $this
+            ->map(function ($value) {
+                return $value instanceof static ? $value->toArray() : $value;
+            })
+            ->all();
     }
 
     /**
-     * The toJson method converts the collection into a JSON serialized string
-     * https://laravel.com/docs/8.x/collections#method-tojson
+     * @inheritDoc
+     * @throws JsonException
      */
-    public function toJson(): string|null
+    public function toJson(): string
     {
-        try {
-            return json_encode($this->toArray(), JSON_THROW_ON_ERROR);
-        } catch (\JsonException) {
-            return null;
-        }
+        return json_encode($this->toArray(), JSON_THROW_ON_ERROR);
     }
 
     /**
-     * The transform method iterates over the collection and calls the given callback with each item in the collection.
-     * The items in the collection will be replaced by the values returned by the callback
-     * https://laravel.com/docs/8.x/collections#method-transform
+     * @inheritDoc
      */
     public function transform(callable $callback): static
     {
-        foreach ($this->items as $key => $item) {
-            $this->put($key, $callback($item, $key));
-        }
+        $this->items = $this->map($callback)->all();
+
         return $this;
     }
 
     /**
-     * The union method adds the given array to the collection.
-     * If the given array contains keys that are already in the original collection,
-     * the original collection's values will be preferred
-     * https://laravel.com/docs/8.x/collections#method-union
+     * @inheritDoc
      */
-    public function union(array $arr): static
+    public function union(CollectionInterface|array $items): static
     {
-        $result = new static($this->items);
-        foreach ($arr as $key => $item) {
-            $result->put($key, $result[$key] ?? $item);
-        }
-        return $result;
+        return static::make($this->items + $items);
     }
 
     /**
-     * The unique method returns all of the unique items in the collection.
-     * The returned collection keeps the original array keys, so in the following example
-     * we will use the values method to reset the keys to consecutively numbered indexes
-     * https://laravel.com/docs/8.x/collections#method-unique
+     * @inheritDoc
      */
-    public function unique(): static
+    public function unique(int|string|callable|null $key = null, bool $strict = false): static
     {
-        return new static(array_unique($this->items));
-    }
+        $callback = $this->valueRetriever($key);
+        $exists = [];
 
-    /**
-     * This method has the same signature as the unique method; however, all values are compared using "strict" comparisons.
-     * https://laravel.com/docs/8.x/collections#method-uniquestrict
-     */
-    public function uniqueStrict(): static
-    {
-        $result = new static();
-        foreach ($this->items as $key => $item) {
-            if (!$result->contains($item)) {
-                $result->put($key, $item);
+        return $this->reject(function ($item, $key) use ($callback, $strict, &$exists) {
+            if (in_array($id = $callback($item, $key), $exists, $strict)) {
+                return true;
             }
-        }
-        return $result;
+            $exists[] = $id;
+
+            return false;
+        });
     }
 
     /**
-     * The unless method will execute the given callback unless the first argument given to the method evaluates to true
-     * https://laravel.com/docs/8.x/collections#method-unless
+     * @inheritDoc
      */
-    public function unless(bool $condition, callable $callback): static
+    public function uniqueStrict(callable|int|string|null $key = null): static
     {
-        return $this->when(!$condition, $callback);
+        return $this->unique($key, true);
     }
 
     /**
-     * Alias for the whenNotEmpty method.
-     * https://laravel.com/docs/8.x/collections#method-unlessempty
+     * @inheritDoc
      */
-    public function unlessEmpty(callable $notEmptyCallback, callable|null $emptyCallback = null): static
+    public function unless(bool $condition, callable $callback, callable|null $default = null): mixed
     {
-        return $this->whenNotEmpty($notEmptyCallback, $emptyCallback);
+        return $this->when(!$condition, $callback, $default);
     }
 
     /**
-     * Alias for the whenEmpty method.
-     * https://laravel.com/docs/8.x/collections#method-unlessnotempty
+     * @inheritDoc
      */
-    public function unlessNotEmpty(callable $emptyCallback, callable|null $notEmptyCallback = null): static
+    public function unlessEmpty(callable $callback, callable|null $default = null): mixed
     {
-        return $this->whenEmpty($emptyCallback, $notEmptyCallback);
+        return $this->whenNotEmpty($callback, $default);
     }
 
     /**
-     * The static unwrap method returns the collection's underlying items from the given value when applicable
-     * https://laravel.com/docs/8.x/collections#method-unwrap
+     * @inheritDoc
      */
-    public static function unwrap(mixed $value): static
+    public function unlessNotEmpty(callable $callback, callable|null $default = null): mixed
     {
-        // TODO: Implement unwrap() method.
+        return $this->whenEmpty($callback, $default);
     }
 
     /**
-     * The values method returns a new collection with the keys reset to consecutive integers
-     * https://laravel.com/docs/8.x/collections#method-values
+     * @inheritDoc
      */
     public function values(): static
     {
-        return new static(array_values($this->items));
+        return static::make(array_values($this->items));
     }
 
     /**
-     * The when method will execute the given callback when the first argument given to the method evaluates to true
-     * https://laravel.com/docs/8.x/collections#method-when
+     * @inheritDoc
      */
-    public function when(bool $condition, callable $callback): static
+    public function when(bool $condition, callable $callback, callable|null $default = null): mixed
     {
         if ($condition) {
-            $callback($this);
+            return $callback($this, $condition);
         }
+        if (!is_null($default)) {
+            return $default($this, $condition);
+        }
+
         return $this;
     }
 
     /**
-     * The whenEmpty method will execute the given callback when the collection is empty
-     * https://laravel.com/docs/8.x/collections#method-whenempty
+     * @inheritDoc
      */
-    public function whenEmpty(callable $emptyCallback, callable|null $notEmptyCallback = null): static
+    public function whenEmpty(callable $callback, callable|null $default = null): mixed
     {
-        if ($this->isEmpty()) {
-            $emptyCallback($this);
-        } elseif (!is_null($notEmptyCallback)) {
-            $notEmptyCallback($this);
-        }
-        return $this;
+        return $this->when($this->isEmpty(), $callback, $default);
     }
 
     /**
-     * The whenNotEmpty method will execute the given callback when the collection is not empty
-     * https://laravel.com/docs/8.x/collections#method-whennotempty
+     * @inheritDoc
      */
-    public function whenNotEmpty(callable $notEmptyCallback, callable|null $emptyCallback = null): static
+    public function whenNotEmpty(callable $callback, callable|null $default = null): mixed
     {
-        if ($this->isNotEmpty()) {
-            $notEmptyCallback($this);
-        } elseif (!is_null($emptyCallback)) {
-            $emptyCallback($this);
-        }
-        return $this;
+        return $this->when($this->isNotEmpty(), $callback, $default);
     }
 
     /**
-     * The where method filters the collection by a given key / value pair
-     * https://laravel.com/docs/8.x/collections#method-where
+     * @inheritDoc
      */
-    public function where(int|string|callable $key, mixed $val, string|callable $comparison = '='): static
+    public function where(callable|int|string $key, Operator|null $operator = null, mixed $value = null): static
     {
-        // TODO: Implement where() method.
+        return $this->filter($this->operatorForWhere($key, $operator, $value));
     }
 
     /**
-     * This method has the same signature as the where method; however, all values are compared using "strict" comparisons.
-     * https://laravel.com/docs/8.x/collections#method-wherestrict
+     * @inheritDoc
      */
-    public function whereStrict()
+    public function whereStrict(callable|int|string $key, mixed $value = null): static
     {
-        // TODO: Implement whereStrict() method.
+        return $this->where($key, Operator::EQUAL_STRICT, $value);
     }
 
     /**
-     * The whereBetween method filters the collection by determining if a specified item value is within a given range
-     * https://laravel.com/docs/8.x/collections#method-wherebetween
+     * @inheritDoc
      */
-    public function whereBetween(int|string|callable $key, int|string|\DateTime $from, int|string|\DateTime $to): static
+    public function whereBetween(callable|int|string $key, mixed $from, mixed $to): static
     {
-        // TODO: Implement whereBetween() method.
+        return $this->where($key, Operator::GREATER_THAN, $from)->where($key, Operator::LESS_THAN, $to);
     }
 
     /**
-     * The whereIn method removes elements from the collection that do not have a specified item value that is contained within the given array
-     * https://laravel.com/docs/8.x/collections#method-wherein
+     * @inheritDoc
      */
-    public function whereIn(int|string|callable $key, array $values): static
+    public function whereIn(callable|int|string $key, CollectionInterface|array $values, bool $strict = false): static
     {
-        // TODO: Implement whereIn() method.
+        $retriever = $this->valueRetriever($key);
+
+        return $this->filter(static function ($item) use ($retriever, $values, $strict) {
+            return in_array($retriever($item), $values, $strict);
+        });
     }
 
     /**
-     * This method has the same signature as the whereIn method; however, all values are compared using "strict" comparisons.
-     * https://laravel.com/docs/8.x/collections#method-whereinstrict
+     * @inheritDoc
      */
-    public function whereInStrict()
+    public function whereInStrict(callable|int|string $key, array $values): static
     {
-        // TODO: Implement whereInStrict() method.
+        return $this->whereIn($key, $values, true);
     }
 
     /**
-     * The whereInstanceOf method filters the collection by a given class type
-     * https://laravel.com/docs/8.x/collections#method-whereinstanceof
+     * @inheritDoc
      */
-    public function whereInstanceOf()
+    public function whereInstanceOf(array|string $class): static
     {
-        // TODO: Implement whereInstanceOf() method.
-    }
+        return $this->filter(function ($value) use ($class) {
+            if (is_array($class)) {
+                foreach ($class as $classType) {
+                    if ($value instanceof $classType) {
+                        return true;
+                    }
+                }
 
-    /**
-     * The whereNotBetween method filters the collection by determining if a specified item value is outside of a given range
-     * https://laravel.com/docs/8.x/collections#method-wherenotbetween
-     */
-    public function whereNotBetween(int|string|callable $key, int|string|\DateTime $from, int|string|\DateTime $to): static
-    {
-        // TODO: Implement whereNotBetween() method.
-    }
-
-    /**
-     * The whereNotIn method removes elements from the collection that have a specified item value that is not contained within the given array
-     * https://laravel.com/docs/8.x/collections#method-wherenotin
-     */
-    public function whereNotIn(int|string|callable $key, array $values): static
-    {
-        // TODO: Implement whereNotIn() method.
-    }
-
-    /**
-     * This method has the same signature as the whereNotIn method; however, all values are compared using "strict" comparisons.
-     * https://laravel.com/docs/8.x/collections#method-wherenotinstrict
-     */
-    public function whereNotInStrict()
-    {
-        // TODO: Implement whereNotInStrict() method.
-    }
-
-    /**
-     * The whereNotNull method returns items from the collection where the given key is not null
-     * https://laravel.com/docs/8.x/collections#method-wherenotnull
-     */
-    public function whereNotNull(int|string|callable $key): static
-    {
-        // TODO: Implement whereNotNull() method.
-    }
-
-    /**
-     * The whereNull method returns items from the collection where the given key is null
-     * https://laravel.com/docs/8.x/collections#method-wherenull
-     */
-    public function whereNull(int|string|callable $key): static
-    {
-        // TODO: Implement whereNull() method.
-    }
-
-    /**
-     * The static wrap method wraps the given value in a collection when applicable
-     * https://laravel.com/docs/8.x/collections#method-wrap
-     */
-    public static function wrap(mixed $value): static
-    {
-        if (is_array($value)) {
-            return new static($value);
-        }
-
-        if ($value instanceof static) {
-            return new static($value->all());
-        }
-
-        return new static([$value]);
-    }
-
-    /**
-     * The zip method merges together the values of the given array with the values of the original collection at their corresponding index
-     * https://laravel.com/docs/8.x/collections#method-zip
-     */
-    public function zip(Collection|array $arr): static
-    {
-        $result = new static();
-        foreach ($this->values()->all() as $index => $item) {
-            $result->push([$item, $arr[$index]]);
-        }
-        return $result;
-    }
-
-    private function valueRetriever(int|string|callable|null $value = null): callable
-    {
-        if (is_callable($value)) {
-            return $value;
-        }
-        return static function ($item) use ($value) {
-            if (is_null($value)) {
-                return $item;
+                return false;
             }
-            if (is_object($item)) {
-                return $item->{$value};
-            }
-            return $item[$value];
-        };
-    }
 
-    private function toArrayRecursive($items): array
-    {
-        $result = [];
-        foreach ($items as $key => $item) {
-            $result[$key] = $item instanceof static ? $this->toArrayRecursive($item->toArray()) : $item;
-        }
-        return $result;
-    }
-
-    private function collapseRecursive(array $items, array $result = []): array
-    {
-        foreach ($items as $item) {
-            if (is_array($item)) {
-                $result = $this->collapseRecursive($item, $result);
-            } else {
-                $result[] = $item;
-            }
-        }
-
-        return $result;
+            return $value instanceof $class;
+        });
     }
 
     /**
-     * @param TKey $offset
-     * @return bool
+     * @inheritDoc
      */
-    public function offsetExists($offset): bool
+    public function whereNotBetween(callable|int|string $key, mixed $from, mixed $to): static
     {
-        return isset($this->items[$offset]);
+        $retriever = $this->valueRetriever($key);
+
+        return $this->filter(static function ($item) use ($retriever, $from, $to) {
+            $value = $retriever($item);
+
+            return $value < $from || $value > $to;
+        });
     }
 
     /**
-     * @param TKey $offset
-     * @return mixed
+     * @inheritDoc
      */
-    public function offsetGet($offset): mixed
+    public function whereNotIn(callable|int|string $key, CollectionInterface|array $values, bool $strict = false): static
     {
-        return $this->items[$offset];
+        $retriever = $this->valueRetriever($key);
+
+        return $this->filter(static function ($item) use ($retriever, $values, $strict) {
+            return !in_array($retriever($item), $values, $strict);
+        });
     }
 
     /**
-     * @param TKey $offset
-     * @param TValue $value
+     * @inheritDoc
+     */
+    public function whereNotInStrict(callable|int|string $key, CollectionInterface|array $values): static
+    {
+        return $this->whereNotIn($key, $values, true);
+    }
+
+    /**
+     * @inheritDoc
+     */
+    public function whereNotNull(callable|int|string $key): static
+    {
+        return $this->where($key, Operator::NOT_EQUAL_STRICT, null);
+    }
+
+    /**
+     * @inheritDoc
+     */
+    public function whereNull(callable|int|string $key): static
+    {
+        return $this->whereStrict($key, null);
+    }
+
+    /**
+     * @inheritDoc
+     */
+    public function zip(array ...$items): static
+    {
+        $params = array_merge([
+            function (...$items) {
+                return static::make($items);
+            }, $this->items,
+        ], $items);
+
+        return static::make(array_map(...$params));
+    }
+
+
+
+    /**
+     * @inheritDoc
+     */
+    public function count(): int
+    {
+        return count($this->items);
+    }
+
+
+    /**
+     * @inheritDoc
      */
     public function offsetSet($offset, $value): void
     {
@@ -1547,10 +1535,132 @@ class Collection implements \ArrayAccess
     }
 
     /**
-     * @param TKey $offset
+     * @inheritDoc
+     */
+    public function offsetExists($offset): bool
+    {
+        return isset($this->items[$offset]);
+    }
+
+    /**
+     * @inheritDoc
+     */
+    public function offsetGet($offset)
+    {
+        return $this->items[$offset] ?? null;
+    }
+
+    /**
+     * @inheritDoc
      */
     public function offsetUnset($offset): void
     {
         unset($this->items[$offset]);
+    }
+
+    /**
+     * @inheritDoc
+     */
+    public function getIterator(): \Traversable|ArrayIterator
+    {
+        return new ArrayIterator($this->items);
+    }
+
+    /**
+     * Make a function to check an item's equality.
+     *
+     * @param mixed $value
+     *
+     * @return callable
+     */
+    protected function equality(mixed $value): callable
+    {
+        return static function ($item) use ($value) {
+            return $item === $value;
+        };
+    }
+
+    /**
+     * Make a function that returns what's passed to it.
+     *
+     * @return callable
+     */
+    protected function identity(): callable
+    {
+        return static function ($value) {
+            return $value;
+        };
+    }
+
+    /**
+     * Make a function using another function, by negating its result.
+     *
+     * @param callable $callback
+     *
+     * @return callable
+     */
+    protected function negate(callable $callback): callable
+    {
+        return static function (...$params) use ($callback) {
+            return !$callback(...$params);
+        };
+    }
+
+    protected function operatorForWhere($key, Operator|null $operator, $value = true): callable
+    {
+        return function ($item) use ($key, $operator, $value) {
+            $retrieved = $this->valueRetriever($key)($item);
+
+            return match ($operator) {
+                Operator::EQUAL => $retrieved == $value,
+                Operator::NOT_EQUAL => $retrieved != $value,
+                Operator::LESS_THAN => $retrieved < $value,
+                Operator::GREATER_THAN => $retrieved > $value,
+                Operator::LESS_THAN_OR_EQUAL => $retrieved <= $value,
+                Operator::GREATER_THAN_OR_EQUAL => $retrieved >= $value,
+                Operator::EQUAL_STRICT => $retrieved === $value,
+                Operator::NOT_EQUAL_STRICT => $retrieved !== $value,
+                default => $retrieved == $value,
+            };
+        };
+    }
+
+    protected function valueRetriever(callable|int|string|null $value = null): callable
+    {
+        if ($this->useAsCallable($value)) {
+            return $value;
+        }
+
+        return static function ($item) use ($value) {
+            if (is_null($value)) {
+                return $item;
+            }
+            if (is_object($item)) {
+                return $item->$value;
+            }
+            if (is_array($item)) {
+                return $item[$value];
+            }
+
+            return $item;
+        };
+    }
+
+    protected function useAsCallable(mixed $value): bool
+    {
+        return !is_string($value) && is_callable($value);
+    }
+
+    protected function duplicateComparator(bool $strict = true): callable
+    {
+        if ($strict) {
+            return static function ($a, $b) {
+                return $a === $b;
+            };
+        }
+
+        return static function ($a, $b) {
+            return $a == $b;
+        };
     }
 }

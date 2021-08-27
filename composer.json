@@ -12,7 +12,7 @@
     "homepage": "https://github.com/upside/collection",
     "minimum-stability": "dev",
     "require": {
-        "php" : ">=8.0"
+        "php" : ">=8.1"
     },
     "require-dev": {
         "vimeo/psalm": "^4.7",
