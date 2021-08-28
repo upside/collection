@@ -21,15 +21,6 @@ allowing you to preserve the original copy of the collection when necessary
 
 [all](#all)
 
-The **all** method returns the underlying array represented by the collection:
-```php
-use Upside\Collection;
-$collection = new Collection();
-$collection->collect([1, 2, 3])->all();
-
-// [1, 2, 3]
-```
-
 [average](#average)
 
 [avg](#avg)
@@ -289,7 +280,17 @@ $collection->collect([1, 2, 3])->all();
 
 
 ### Method Listing
+
 #### <a name="all">#</a> all
+The **all** method returns the underlying array represented by the collection:
+```php
+use Upside\Collection;
+$collection = new Collection();
+$collection->collect([1, 2, 3])->all();
+
+// [1, 2, 3]
+```
+
 #### <a name="average">#</a> average
 #### <a name="avg">#</a> avg
 #### <a name="chunk">#</a> chunk
