@@ -18,8 +18,6 @@ use IteratorAggregate;
 interface CollectionInterface extends Countable, ArrayAccess, IteratorAggregate
 {
     /**
-     * The all method returns the underlying array represented by the collection
-     *
      * Возвращает базовый массив коллекции
      *
      * collect([1, 2, 3])->all();
@@ -32,8 +30,6 @@ interface CollectionInterface extends Countable, ArrayAccess, IteratorAggregate
     public function all(): array;
 
     /**
-     * The avg method returns the average value of a given key
-     *
      * Возвращает среднее значение по ключу
      *
      * $average = collect([
@@ -58,8 +54,6 @@ interface CollectionInterface extends Countable, ArrayAccess, IteratorAggregate
     public function avg(callable|int|string|null $key = null): float;
 
     /**
-     * Alias for the avg method.
-     *
      * Псевдоним avg
      *
      * @param callable|int|string|null $key
@@ -71,8 +65,6 @@ interface CollectionInterface extends Countable, ArrayAccess, IteratorAggregate
     public function average(callable|int|string|null $key = null): float;
 
     /**
-     * The chunk method breaks the collection into multiple, smaller collections of a given size
-     *
      * Возвращает коллекцию разбитую на несколько меньших коллекций заданного размера
      *
      * $collection = collect([1, 2, 3, 4, 5, 6, 7]);
@@ -90,10 +82,6 @@ interface CollectionInterface extends Countable, ArrayAccess, IteratorAggregate
     public function chunk(int $size): static;
 
     /**
-     * The chunkWhile method breaks the collection into multiple,
-     * smaller collections based on the evaluation of the given callback.
-     * The $chunk variable passed to the closure may be used to inspect the previous element
-     *
      * @param callable $callback
      *
      * @return static
@@ -101,8 +89,6 @@ interface CollectionInterface extends Countable, ArrayAccess, IteratorAggregate
     public function chunkWhile(callable $callback): static;
 
     /**
-     * The collapse method collapses a collection of arrays into a single, flat collection
-     *
      * Возвращает плоскую коллекцию
      *
      * $collection = collect([
@@ -122,15 +108,11 @@ interface CollectionInterface extends Countable, ArrayAccess, IteratorAggregate
     public function collapse(): static;
 
     /**
-     * The collect method returns a new Collection instance with the items currently in the collection
-     *
      * @return static
      */
     public function collect(): static;
 
     /**
-     * The combine method combines the values of the collection, as keys, with the values of another array or collection
-     *
      * Возвращает коллекцию используя значения коллекции в качестве ключей со значениями массива
      *
      * $collection = collect(['name', 'age']);
