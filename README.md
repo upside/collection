@@ -14,4 +14,9 @@
 
 ### <a name="available_methods"></a>Available Methods
 
+For the majority of the remaining collection documentation, we'll discuss each method available on the Collection class. 
+Remember, all of these methods may be chained to fluently manipulate the underlying array. 
+Furthermore, almost every method returns a new Collection instance, 
+allowing you to preserve the original copy of the collection when necessary
+
 ### <a name="higher_order_messages"></a>Higher Order Messages
