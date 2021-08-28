@@ -10,44 +10,24 @@ use IteratorAggregate;
 
 /**
  * Interface CollectionInterface
- *
- * @phpstan-template TKey
- * @psalm-template TKey of array-key
- * @psalm-template T
  */
 interface CollectionInterface extends Countable, ArrayAccess, IteratorAggregate
 {
     /**
      * Возвращает базовый массив коллекции
      *
-     * collect([1, 2, 3])->all();
-     *
-     * [1, 2, 3]
+     * @link https://github.com/upside/collection#all
      *
      * @return array
-     * @psalm-return T[]
      */
     public function all(): array;
 
     /**
      * Возвращает среднее значение по ключу
      *
-     * $average = collect([
-     *      ['foo' => 10],
-     *      ['foo' => 10],
-     *      ['foo' => 20],
-     *      ['foo' => 40]
-     *  ])->avg('foo');
-     *
-     * 20
-     *
-     * $average = collect([1, 1, 2, 4])->avg();
-     *
-     * 2
+     * @link https://github.com/upside/collection#avg
      *
      * @param callable|int|string|null $key
-     *
-     * @psalm-param TKey|callable|null $key
      *
      * @return float
      */
@@ -56,9 +36,9 @@ interface CollectionInterface extends Countable, ArrayAccess, IteratorAggregate
     /**
      * Псевдоним avg
      *
-     * @param callable|int|string|null $key
+     * @link https://github.com/upside/collection#average
      *
-     * @psalm-param TKey|callable|null $key
+     * @param callable|int|string|null $key
      *
      * @return float
      */
@@ -67,13 +47,7 @@ interface CollectionInterface extends Countable, ArrayAccess, IteratorAggregate
     /**
      * Возвращает коллекцию разбитую на несколько меньших коллекций заданного размера
      *
-     * $collection = collect([1, 2, 3, 4, 5, 6, 7]);
-     *
-     * $chunks = $collection->chunk(4);
-     *
-     * $chunks->all();
-     *
-     * [[1, 2, 3, 4], [5, 6, 7]]
+     * @link https://github.com/upside/collection#chunk
      *
      * @param int $size
      *
@@ -82,6 +56,8 @@ interface CollectionInterface extends Countable, ArrayAccess, IteratorAggregate
     public function chunk(int $size): static;
 
     /**
+     * @link https://github.com/upside/collection#chunkWhile
+     *
      * @param callable $callback
      *
      * @return static
@@ -91,23 +67,15 @@ interface CollectionInterface extends Countable, ArrayAccess, IteratorAggregate
     /**
      * Возвращает плоскую коллекцию
      *
-     * $collection = collect([
-     *     [1, 2, 3],
-     *     [4, 5, 6],
-     *     [7, 8, 9],
-     * ]);
-     *
-     * $collapsed = $collection->collapse();
-     *
-     * $collapsed->all();
-     *
-     * [1, 2, 3, 4, 5, 6, 7, 8, 9]
+     * @link https://github.com/upside/collection#collapse
      *
      * @return static
      */
     public function collapse(): static;
 
     /**
+     * @link https://github.com/upside/collection#collect
+     *
      * @return static
      */
     public function collect(): static;
@@ -115,13 +83,7 @@ interface CollectionInterface extends Countable, ArrayAccess, IteratorAggregate
     /**
      * Возвращает коллекцию используя значения коллекции в качестве ключей со значениями массива
      *
-     * $collection = collect(['name', 'age']);
-     *
-     * $combined = $collection->combine(['George', 29]);
-     *
-     * $combined->all();
-     *
-     * ['name' => 'George', 'age' => 29]
+     * @link https://github.com/upside/collection#combine
      *
      * @param $values
      *
@@ -132,13 +94,7 @@ interface CollectionInterface extends Countable, ArrayAccess, IteratorAggregate
     /**
      * Возвращает коллекцию с добавленными в конец значениями $source
      *
-     * $collection = collect(['John Doe']);
-     *
-     * $concatenated = $collection->concat(['Jane Doe'])->concat(['name' => 'Johnny Doe']);
-     *
-     * $concatenated->all();
-     *
-     * ['John Doe', 'Jane Doe', 'Johnny Doe']
+     * @link https://github.com/upside/collection#concat
      *
      * @param CollectionInterface|array $source
      *
@@ -148,6 +104,8 @@ interface CollectionInterface extends Countable, ArrayAccess, IteratorAggregate
 
     /**
      * Проверяет наличие значения в коллекции
+     *
+     * @link https://github.com/upside/collection#contains
      *
      * @param mixed $value
      * @param callable|int|string|null $key
@@ -160,8 +118,9 @@ interface CollectionInterface extends Countable, ArrayAccess, IteratorAggregate
     /**
      * Проверяет (строго) наличие значения в коллекции
      *
-     * @param mixed $value
+     * @link https://github.com/upside/collection#containsStrict
      *
+     * @param mixed $value
      * @param callable|int|string|null $key
      *
      * @return bool
@@ -169,6 +128,8 @@ interface CollectionInterface extends Countable, ArrayAccess, IteratorAggregate
     public function containsStrict(mixed $value, callable|int|string|null $key = null): bool;
 
     /**
+     * @link https://github.com/upside/collection#countBy
+     *
      * @param callable|null $callback
      *
      * @return static
@@ -176,6 +137,8 @@ interface CollectionInterface extends Countable, ArrayAccess, IteratorAggregate
     public function countBy(callable|null $callback = null): static;
 
     /**
+     * @link https://github.com/upside/collection#crossJoin
+     *
      * @param array ...$lists
      *
      * @return static
@@ -185,13 +148,7 @@ interface CollectionInterface extends Countable, ArrayAccess, IteratorAggregate
     /**
      * Возвращает коллекцию с элементами которых нет в $items
      *
-     * $collection = collect([1, 2, 3, 4, 5]);
-     *
-     * $diff = $collection->diff([2, 4, 6, 8]);
-     *
-     * $diff->all();
-     *
-     * [1, 3, 5]
+     * @link https://github.com/upside/collection#diff
      *
      * @param CollectionInterface|array $items
      *
@@ -202,22 +159,7 @@ interface CollectionInterface extends Countable, ArrayAccess, IteratorAggregate
     /**
      * Возвращает коллекцию с элементами которых нет в $items c учётом ключей
      *
-     * $collection = collect([
-     *     'color' => 'orange',
-     *     'type' => 'fruit',
-     *     'remain' => 6,
-     * ]);
-     *
-     * $diff = $collection->diffAssoc([
-     *     'color' => 'yellow',
-     *     'type' => 'fruit',
-     *     'remain' => 3,
-     *     'used' => 6,
-     * ]);
-     *
-     * $diff->all();
-     *
-     * ['color' => 'orange', 'remain' => 6]
+     * @link https://github.com/upside/collection#diffAssoc
      *
      * @param CollectionInterface|array $items
      *
@@ -228,24 +170,7 @@ interface CollectionInterface extends Countable, ArrayAccess, IteratorAggregate
     /**
      * Возвращает коллекцию с элементами которых нет в $items на основе ключей
      *
-     * $collection = collect([
-     *     'one' => 10,
-     *     'two' => 20,
-     *     'three' => 30,
-     *     'four' => 40,
-     *     'five' => 50,
-     * ]);
-     *
-     * $diff = $collection->diffKeys([
-     *     'two' => 2,
-     *     'four' => 4,
-     *     'six' => 6,
-     *     'eight' => 8,
-     * ]);
-     *
-     * $diff->all();
-     *
-     * ['one' => 10, 'three' => 30, 'five' => 50]
+     * @link https://github.com/upside/collection#diffKeys
      *
      * @param CollectionInterface|array $items
      *
@@ -256,11 +181,7 @@ interface CollectionInterface extends Countable, ArrayAccess, IteratorAggregate
     /**
      * Возвращает коллекцию повторяющихся значений
      *
-     * $collection = collect(['a', 'b', 'a', 'c', 'b']);
-     *
-     * $collection->duplicates();
-     *
-     * [2 => 'a', 4 => 'b']
+     * @link https://github.com/upside/collection#duplicates
      *
      * @param callable|string|null $callback
      * @param bool $strict
@@ -272,6 +193,8 @@ interface CollectionInterface extends Countable, ArrayAccess, IteratorAggregate
     /**
      * Алиас для duplicates но со строгим сравнением
      *
+     * @link https://github.com/upside/collection#duplicatesStrict
+     *
      * @param callable|string|null $callback
      *
      * @return static
@@ -279,6 +202,8 @@ interface CollectionInterface extends Countable, ArrayAccess, IteratorAggregate
     public function duplicatesStrict(callable|string|null $callback = null): static;
 
     /**
+     * @link https://github.com/upside/collection#each
+     *
      * @param callable $callback
      *
      * @return static
@@ -286,6 +211,8 @@ interface CollectionInterface extends Countable, ArrayAccess, IteratorAggregate
     public function each(callable $callback): static;
 
     /**
+     * @link https://github.com/upside/collection#eachSpread
+     *
      * @param callable $callback
      *
      * @return static
@@ -295,13 +222,7 @@ interface CollectionInterface extends Countable, ArrayAccess, IteratorAggregate
     /**
      * Проверяет все ли элементы проходят тест
      *
-     * $collection = collect([1, 2, 3, 4]);
-     *
-     * $collection->every(function ($value, $key) {
-     *     return $value > 2;
-     * });
-     *
-     * false
+     * @link https://github.com/upside/collection#every
      *
      * @param callable $callback
      *
@@ -310,6 +231,8 @@ interface CollectionInterface extends Countable, ArrayAccess, IteratorAggregate
     public function every(callable $callback): bool;
 
     /**
+     * @link https://github.com/upside/collection#except
+     *
      * @param CollectionInterface|array $keys
      *
      * @return static
@@ -317,6 +240,8 @@ interface CollectionInterface extends Countable, ArrayAccess, IteratorAggregate
     public function except(CollectionInterface|array $keys): static;
 
     /**
+     * @link https://github.com/upside/collection#filter
+     *
      * @param callable|null $callback
      *
      * @return static
@@ -324,6 +249,8 @@ interface CollectionInterface extends Countable, ArrayAccess, IteratorAggregate
     public function filter(callable|null $callback = null): static;
 
     /**
+     * @link https://github.com/upside/collection#first
+     *
      * @param callable|null $callback
      * @param mixed $default
      *
@@ -332,6 +259,8 @@ interface CollectionInterface extends Countable, ArrayAccess, IteratorAggregate
     public function first(callable|null $callback = null, mixed $default = null): mixed;
 
     /**
+     * @link https://github.com/upside/collection#firstWhere
+     *
      * @param callable|int|string|null $key
      * @param Operator|null $operator
      * @param mixed $value
@@ -341,6 +270,8 @@ interface CollectionInterface extends Countable, ArrayAccess, IteratorAggregate
     public function firstWhere(callable|int|string|null $key, Operator|null $operator = null, mixed $value = null): mixed;
 
     /**
+     * @link https://github.com/upside/collection#flatMap
+     *
      * @param callable $callback
      *
      * @return static
@@ -348,6 +279,8 @@ interface CollectionInterface extends Countable, ArrayAccess, IteratorAggregate
     public function flatMap(callable $callback): static;
 
     /**
+     * @link https://github.com/upside/collection#flatten
+     *
      * @param int|null $depth
      *
      * @return static
@@ -355,11 +288,15 @@ interface CollectionInterface extends Countable, ArrayAccess, IteratorAggregate
     public function flatten(int|null $depth = null): static;
 
     /**
+     * @link https://github.com/upside/collection#flip
+     *
      * @return static
      */
     public function flip(): static;
 
     /**
+     * @link https://github.com/upside/collection#forget
+     *
      * @param $key
      *
      * @return static
@@ -367,6 +304,8 @@ interface CollectionInterface extends Countable, ArrayAccess, IteratorAggregate
     public function forget($key): static;
 
     /**
+     * @link https://github.com/upside/collection#forPage
+     *
      * @param int $page
      * @param int $size
      *
@@ -377,25 +316,7 @@ interface CollectionInterface extends Countable, ArrayAccess, IteratorAggregate
     /**
      * Возвращает элемент по заданному ключу. Если ключ не найден возвращает null
      *
-     * $collection = new Collection(['name' => 'taylor', 'framework' => 'laravel']);
-     *
-     * $value = $collection->get('name');
-     *
-     * taylor
-     *
-     * Можно передать значение по умолчанию вторым аргументом
-     *
-     * $collection = new Collection(['name' => 'taylor', 'framework' => 'laravel']);
-     *
-     * $value = $collection->get('age', 34);
-     *
-     * 34
-     *
-     * $collection->get('email', function () {
-     *    return 'taylor@example.com';
-     * });
-     *
-     * taylor@example.com
+     * @link https://github.com/upside/collection#get
      *
      * @param callable|int|string|null $key
      * @param mixed $default
@@ -407,79 +328,7 @@ interface CollectionInterface extends Countable, ArrayAccess, IteratorAggregate
     /**
      * Возвращает коллекцию сгруппированную по полю
      *
-     * $collection = new Collection([
-     *     ['account_id' => 'account-x10', 'product' => 'Chair'],
-     *     ['account_id' => 'account-x10', 'product' => 'Bookcase'],
-     *     ['account_id' => 'account-x11', 'product' => 'Desk'],
-     * ]);
-     *
-     * $grouped = $collection->groupBy('account_id');
-     *
-     * $grouped->all();
-     *
-     * [
-     *     'account-x10' => [
-     *         ['account_id' => 'account-x10', 'product' => 'Chair'],
-     *         ['account_id' => 'account-x10', 'product' => 'Bookcase'],
-     *     ],
-     *     'account-x11' => [
-     *         ['account_id' => 'account-x11', 'product' => 'Desk'],
-     *     ],
-     * ]
-     *
-     * =======================================================================
-     *
-     * $grouped = $collection->groupBy(function ($item, $key) {
-     *     return substr($item['account_id'], -3);
-     * });
-     *
-     * $grouped->all();
-     *
-     * [
-     *     'x10' => [
-     *         ['account_id' => 'account-x10', 'product' => 'Chair'],
-     *         ['account_id' => 'account-x10', 'product' => 'Bookcase'],
-     *     ],
-     *     'x11' => [
-     *         ['account_id' => 'account-x11', 'product' => 'Desk'],
-     *     ],
-     * ]
-     *
-     * ========================================================================
-     *
-     * $data = new Collection([
-     *     10 => ['user' => 1, 'skill' => 1, 'roles' => ['Role_1', 'Role_3']],
-     *     20 => ['user' => 2, 'skill' => 1, 'roles' => ['Role_1', 'Role_2']],
-     *     30 => ['user' => 3, 'skill' => 2, 'roles' => ['Role_1']],
-     *     40 => ['user' => 4, 'skill' => 2, 'roles' => ['Role_2']],
-     * ]);
-     *
-     * $result = $data->groupBy(['skill', function ($item) {
-     *     return $item['roles'];
-     * }], $preserveKeys = true);
-     *
-     * [
-     *     1 => [
-     *         'Role_1' => [
-     *             10 => ['user' => 1, 'skill' => 1, 'roles' => ['Role_1', 'Role_3']],
-     *             20 => ['user' => 2, 'skill' => 1, 'roles' => ['Role_1', 'Role_2']],
-     *         ],
-     *         'Role_2' => [
-     *             20 => ['user' => 2, 'skill' => 1, 'roles' => ['Role_1', 'Role_2']],
-     *         ],
-     *         'Role_3' => [
-     *             10 => ['user' => 1, 'skill' => 1, 'roles' => ['Role_1', 'Role_3']],
-     *         ],
-     *     ],
-     *     2 => [
-     *         'Role_1' => [
-     *             30 => ['user' => 3, 'skill' => 2, 'roles' => ['Role_1']],
-     *         ],
-     *         'Role_2' => [
-     *             40 => ['user' => 4, 'skill' => 2, 'roles' => ['Role_2']],
-     *         ],
-     *     ],
-     * ];
+     * @link https://github.com/upside/collection#groupBy
      *
      * @param $groupBy
      * @param bool $preserveKeys
@@ -489,6 +338,8 @@ interface CollectionInterface extends Countable, ArrayAccess, IteratorAggregate
     public function groupBy($groupBy, bool $preserveKeys = false): static;
 
     /**
+     * @link https://github.com/upside/collection#has
+     *
      * @param callable|int|string $key
      *
      * @return bool
@@ -496,6 +347,8 @@ interface CollectionInterface extends Countable, ArrayAccess, IteratorAggregate
     public function has(callable|int|string $key): bool;
 
     /**
+     * @link https://github.com/upside/collection#implode
+     *
      * @param string $separator
      * @param callable|int|string|null $key
      *
@@ -504,6 +357,8 @@ interface CollectionInterface extends Countable, ArrayAccess, IteratorAggregate
     public function implode(string $separator, callable|int|string|null $key = null): string;
 
     /**
+     * @link https://github.com/upside/collection#intersect
+     *
      * @param CollectionInterface|array $values
      *
      * @return static
@@ -511,6 +366,8 @@ interface CollectionInterface extends Countable, ArrayAccess, IteratorAggregate
     public function intersect(CollectionInterface|array $values): static;
 
     /**
+     * @link https://github.com/upside/collection#intersectByKeys
+     *
      * @param CollectionInterface|array $values
      *
      * @return static
@@ -518,16 +375,22 @@ interface CollectionInterface extends Countable, ArrayAccess, IteratorAggregate
     public function intersectByKeys(CollectionInterface|array $values): static;
 
     /**
+     * @link https://github.com/upside/collection#isEmpty
+     *
      * @return bool
      */
     public function isEmpty(): bool;
 
     /**
+     * @link https://github.com/upside/collection#isNotEmpty
+     *
      * @return bool
      */
     public function isNotEmpty(): bool;
 
     /**
+     * @link https://github.com/upside/collection#join
+     *
      * @param string $glue
      * @param string $finalGlue
      *
@@ -536,6 +399,8 @@ interface CollectionInterface extends Countable, ArrayAccess, IteratorAggregate
     public function join(string $glue, string $finalGlue = ''): string;
 
     /**
+     * @link https://github.com/upside/collection#keyBy
+     *
      * @param callable|int|string|null $key
      *
      * @return static
@@ -543,11 +408,15 @@ interface CollectionInterface extends Countable, ArrayAccess, IteratorAggregate
     public function keyBy(callable|int|string|null $key): static;
 
     /**
+     * @link https://github.com/upside/collection#keys
+     *
      * @return static
      */
     public function keys(): static;
 
     /**
+     * @link https://github.com/upside/collection#last
+     *
      * @param callable|null $callback
      *
      * @return mixed
@@ -555,6 +424,8 @@ interface CollectionInterface extends Countable, ArrayAccess, IteratorAggregate
     public function last(callable|null $callback = null): mixed;
 
     /**
+     * @link https://github.com/upside/collection#map
+     *
      * @param callable $callback
      *
      * @return static
@@ -562,6 +433,8 @@ interface CollectionInterface extends Countable, ArrayAccess, IteratorAggregate
     public function map(callable $callback): static;
 
     /**
+     * @link https://github.com/upside/collection#mapInto
+     *
      * @param string $class
      *
      * @return static
@@ -569,6 +442,8 @@ interface CollectionInterface extends Countable, ArrayAccess, IteratorAggregate
     public function mapInto(string $class): static;
 
     /**
+     * @link https://github.com/upside/collection#mapSpread
+     *
      * @param callable $callback
      *
      * @return static
@@ -576,6 +451,8 @@ interface CollectionInterface extends Countable, ArrayAccess, IteratorAggregate
     public function mapSpread(callable $callback): static;
 
     /**
+     * @link https://github.com/upside/collection#mapToGroups
+     *
      * @param callable $callback
      *
      * @return static
@@ -583,6 +460,8 @@ interface CollectionInterface extends Countable, ArrayAccess, IteratorAggregate
     public function mapToGroups(callable $callback): static;
 
     /**
+     * @link https://github.com/upside/collection#mapWithKeys
+     *
      * @param callable $callback
      *
      * @return static
@@ -590,6 +469,8 @@ interface CollectionInterface extends Countable, ArrayAccess, IteratorAggregate
     public function mapWithKeys(callable $callback): static;
 
     /**
+     * @link https://github.com/upside/collection#max
+     *
      * @param callable|int|string|null $key
      *
      * @return mixed
@@ -597,6 +478,8 @@ interface CollectionInterface extends Countable, ArrayAccess, IteratorAggregate
     public function max(callable|int|string|null $key = null): mixed;
 
     /**
+     * @link https://github.com/upside/collection#median
+     *
      * @param callable|int|string|null $key
      *
      * @return mixed
@@ -604,6 +487,8 @@ interface CollectionInterface extends Countable, ArrayAccess, IteratorAggregate
     public function median(callable|int|string|null $key = null): mixed;
 
     /**
+     * @link https://github.com/upside/collection#merge
+     *
      * @param iterable $items
      *
      * @return static
@@ -611,6 +496,8 @@ interface CollectionInterface extends Countable, ArrayAccess, IteratorAggregate
     public function merge(iterable $items): static;
 
     /**
+     * @link https://github.com/upside/collection#mergeRecursive
+     *
      * @param CollectionInterface|array $items
      *
      * @return static
@@ -618,20 +505,24 @@ interface CollectionInterface extends Countable, ArrayAccess, IteratorAggregate
     public function mergeRecursive(CollectionInterface|array $items): static;
 
     /**
+     * @link https://github.com/upside/collection#min
+     *
      * @param callable|int|string|null $key
      */
     public function min(callable|int|string|null $key = null): mixed;
 
     /**
-     * @param int|string|null $key
+     * @link https://github.com/upside/collection#mode
      *
-     * @psalm-param TKey|null $key
+     * @param int|string|null $key
      *
      * @return array|null
      */
     public function mode(int|string|null $key = null): array|null;
 
     /**
+     * @link https://github.com/upside/collection#nth
+     *
      * @param int $step
      * @param int $offset
      *
@@ -640,15 +531,17 @@ interface CollectionInterface extends Countable, ArrayAccess, IteratorAggregate
     public function nth(int $step, int $offset = 0): static;
 
     /**
-     * @param int[]|string[] $keys
+     * @link https://github.com/upside/collection#only
      *
-     * @psalm-param TKey[] $keys
+     * @param int[]|string[] $keys
      *
      * @return static
      */
     public function only(array $keys): static;
 
     /**
+     * @link https://github.com/upside/collection#pad
+     *
      * @param int $size
      * @param mixed $value
      *
@@ -657,6 +550,8 @@ interface CollectionInterface extends Countable, ArrayAccess, IteratorAggregate
     public function pad(int $size, mixed $value): static;
 
     /**
+     * @link https://github.com/upside/collection#partition
+     *
      * @param callable|int|string|null $key
      * @param Operator|null $operator
      * @param mixed $value
@@ -666,6 +561,8 @@ interface CollectionInterface extends Countable, ArrayAccess, IteratorAggregate
     public function partition(callable|int|string|null $key, Operator|null $operator = null, mixed $value = null): static;
 
     /**
+     * @link https://github.com/upside/collection#pipe
+     *
      * @param callable $callback
      *
      * @return mixed
@@ -673,6 +570,8 @@ interface CollectionInterface extends Countable, ArrayAccess, IteratorAggregate
     public function pipe(callable $callback): mixed;
 
     /**
+     * @link https://github.com/upside/collection#pipeInto
+     *
      * @param string $class
      *
      * @return object
@@ -680,6 +579,8 @@ interface CollectionInterface extends Countable, ArrayAccess, IteratorAggregate
     public function pipeInto(string $class): object;
 
     /**
+     * @link https://github.com/upside/collection#pluck
+     *
      * @param callable|int|string|null $key
      *
      * @return static
@@ -687,12 +588,15 @@ interface CollectionInterface extends Countable, ArrayAccess, IteratorAggregate
     public function pluck(callable|int|string|null $key = null): static;
 
     /**
+     * @link https://github.com/upside/collection#pop
+     *
      * @return mixed
-     * @psalm-return T|null
      */
     public function pop(): mixed;
 
     /**
+     * @link https://github.com/upside/collection#prepend
+     *
      * @param mixed $value
      *
      * @return static
@@ -700,6 +604,8 @@ interface CollectionInterface extends Countable, ArrayAccess, IteratorAggregate
     public function prepend(mixed $value): static;
 
     /**
+     * @link https://github.com/upside/collection#pull
+     *
      * @param callable|int|string $key
      *
      * @return mixed
@@ -709,17 +615,9 @@ interface CollectionInterface extends Countable, ArrayAccess, IteratorAggregate
     /**
      * Добавляет элемент в конец коллекции
      *
-     * $collection = new Collection([1, 2, 3, 4]);
-     *
-     * $collection->push(5);
-     *
-     * $collection->all();
-     *
-     * [1, 2, 3, 4, 5]
+     * @link https://github.com/upside/collection#push
      *
      * @param mixed $item
-     *
-     * @psalm-param T $item
      *
      * @return static
      */
@@ -728,19 +626,10 @@ interface CollectionInterface extends Countable, ArrayAccess, IteratorAggregate
     /**
      * Устанавливает заданный ключ и значение для в коллекции
      *
-     * $collection = new Collection(['product_id' => 1, 'name' => 'Desk']);
-     *
-     * $collection->put('price', 100);
-     *
-     * $collection->all();
-     *
-     * ['product_id' => 1, 'name' => 'Desk', 'price' => 100]
+     * @link https://github.com/upside/collection#put
      *
      * @param int|string $key
      * @param mixed $value
-     *
-     * @psalm-param TKey $key
-     * @psalm-param T $value
      *
      * @return static
      */
@@ -750,67 +639,18 @@ interface CollectionInterface extends Countable, ArrayAccess, IteratorAggregate
      *
      * Возвращает случайный элемент коллекции
      *
-     * $collection = new Collection([1, 2, 3, 4, 5]);
-     *
-     * $collection->random();
-     *
-     * 4 - (retrieved randomly)
-     *
-     * Вы можете передать число элементов которые вы хотите получить случайным образом
-     *
-     * $random = $collection->random(3);
-     *
-     * $random->all();
-     *
-     * [2, 4, 5] - (retrieved randomly)
-     *
-     * Если в коллекции меньше элементов чем запрошено метод вызовет исключение InvalidArgumentException
+     * @link https://github.com/upside/collection#random
      *
      * @param int $items
      *
      * @return mixed
-     * @psalm-return T|T[]
      */
     public function random(int $items = 1): mixed;
 
     /**
      * Сокращает коллекцию до одного значения передавая результат каждой итерации в следующую итерацию
      *
-     * $collection = new Collection([1, 2, 3]);
-     *
-     * $total = $collection->reduce(function ($carry, $item) {
-     *    return $carry + $item;
-     * });
-     *
-     * 6
-     *
-     * По умолчанию $initial равно null но вы можете передать второй аргумент для установки значения $initial
-     *
-     * $collection->reduce(function ($carry, $item) {
-     *    return $carry + $item;
-     * }, 4);
-     *
-     * 10
-     *
-     * The reduce method also passes array keys in associative collections to the given callback
-     *
-     * $collection = new Collection([
-     *    'usd' => 1400,
-     *    'gbp' => 1200,
-     *    'eur' => 1000,
-     * ]);
-     *
-     * $ratio = [
-     *    'usd' => 1,
-     *    'gbp' => 1.37,
-     *    'eur' => 1.22,
-     * ];
-     *
-     * $collection->reduce(function ($carry, $value, $key) use ($ratio) {
-     *    return $carry + ($value * $ratio[$key]);
-     * });
-     *
-     * 4264
+     * @link https://github.com/upside/collection#reduce
      *
      * @param callable $callback
      * @param mixed|null $initial
@@ -820,6 +660,8 @@ interface CollectionInterface extends Countable, ArrayAccess, IteratorAggregate
     public function reduce(callable $callback, mixed $initial = null): mixed;
 
     /**
+     * @link https://github.com/upside/collection#reject
+     *
      * @param callable $callback
      *
      * @return static
@@ -827,6 +669,8 @@ interface CollectionInterface extends Countable, ArrayAccess, IteratorAggregate
     public function reject(callable $callback): static;
 
     /**
+     * @link https://github.com/upside/collection#replace
+     *
      * @param CollectionInterface|array $items
      *
      * @return static
@@ -834,6 +678,8 @@ interface CollectionInterface extends Countable, ArrayAccess, IteratorAggregate
     public function replace(CollectionInterface|array $items): static;
 
     /**
+     * @link https://github.com/upside/collection#replaceRecursive
+     *
      * @param CollectionInterface|array $items
      *
      * @return static
@@ -841,6 +687,8 @@ interface CollectionInterface extends Countable, ArrayAccess, IteratorAggregate
     public function replaceRecursive(CollectionInterface|array $items): static;
 
     /**
+     * @link https://github.com/upside/collection#reverse
+     *
      * @return static
      */
     public function reverse(): static;
@@ -848,17 +696,7 @@ interface CollectionInterface extends Countable, ArrayAccess, IteratorAggregate
     /**
      * Ищет значение в коллекции и возвращает его ключ если найдено и false если не найдено
      *
-     * $collection = new Collection([2, 4, 6, 8]);
-     *
-     * $collection->search(4);
-     *
-     * 1
-     *
-     * $collection = new Collection([2, 4, 6, 8]);
-     *
-     * $collection->search('4', $strict = true);
-     *
-     * false
+     * @link https://github.com/upside/collection#search
      *
      * @param mixed $value
      * @param bool $strict
@@ -868,16 +706,22 @@ interface CollectionInterface extends Countable, ArrayAccess, IteratorAggregate
     public function search(mixed $value, bool $strict = true): int|string|bool;
 
     /**
+     * @link https://github.com/upside/collection#shift
+     *
      * @return mixed
      */
     public function shift(): mixed;
 
     /**
+     * @link https://github.com/upside/collection#shuffle
+     *
      * @return self
      */
     public function shuffle(): self;
 
     /**
+     * @link https://github.com/upside/collection#skip
+     *
      * @param int $skip
      *
      * @return static
@@ -885,6 +729,8 @@ interface CollectionInterface extends Countable, ArrayAccess, IteratorAggregate
     public function skip(int $skip): static;
 
     /**
+     * @link https://github.com/upside/collection#skipUntil
+     *
      * @param callable|int|string $value
      *
      * @return static
@@ -892,6 +738,8 @@ interface CollectionInterface extends Countable, ArrayAccess, IteratorAggregate
     public function skipUntil(callable|int|string $value): static;
 
     /**
+     * @link https://github.com/upside/collection#skipWhile
+     *
      * @param callable $callback
      *
      * @return static
@@ -899,6 +747,8 @@ interface CollectionInterface extends Countable, ArrayAccess, IteratorAggregate
     public function skipWhile(callable $callback): static;
 
     /**
+     * @link https://github.com/upside/collection#slice
+     *
      * @param int $offset
      * @param int|null $length
      *
@@ -907,6 +757,8 @@ interface CollectionInterface extends Countable, ArrayAccess, IteratorAggregate
     public function slice(int $offset, int|null $length = null): static;
 
     /**
+     * @link https://github.com/upside/collection#sole
+     *
      * @param callable|int|string|null $key
      * @param Operator|null $operator
      * @param mixed $value
@@ -916,6 +768,8 @@ interface CollectionInterface extends Countable, ArrayAccess, IteratorAggregate
     public function sole(callable|int|string|null $key = null, Operator|null $operator = null, mixed $value = null): mixed;
 
     /**
+     * @link https://github.com/upside/collection#some
+     *
      * @param mixed $value
      * @param callable|int|string|null $key
      *
@@ -924,6 +778,8 @@ interface CollectionInterface extends Countable, ArrayAccess, IteratorAggregate
     public function some(mixed $value, callable|int|string|null $key = null): bool;
 
     /**
+     * @link https://github.com/upside/collection#sort
+     *
      * @param callable|null $callback
      *
      * @return static
@@ -931,6 +787,8 @@ interface CollectionInterface extends Countable, ArrayAccess, IteratorAggregate
     public function sort(callable|null $callback = null): static;
 
     /**
+     * @link https://github.com/upside/collection#sortBy
+     *
      * @param callable $callback
      * @param int $options
      * @param bool $descending
@@ -940,6 +798,8 @@ interface CollectionInterface extends Countable, ArrayAccess, IteratorAggregate
     public function sortBy(callable $callback, int $options = SORT_REGULAR, bool $descending = false): static;
 
     /**
+     * @link https://github.com/upside/collection#sortByDesc
+     *
      * @param callable $callback
      * @param int $options
      *
@@ -948,6 +808,8 @@ interface CollectionInterface extends Countable, ArrayAccess, IteratorAggregate
     public function sortByDesc(callable $callback, int $options = SORT_REGULAR): static;
 
     /**
+     * @link https://github.com/upside/collection#sortDesc
+     *
      * @param int $options
      *
      * @return static
@@ -955,6 +817,8 @@ interface CollectionInterface extends Countable, ArrayAccess, IteratorAggregate
     public function sortDesc(int $options = SORT_REGULAR): static;
 
     /**
+     * @link https://github.com/upside/collection#sortKeys
+     *
      * @param int $options
      * @param bool $descending
      *
@@ -963,6 +827,8 @@ interface CollectionInterface extends Countable, ArrayAccess, IteratorAggregate
     public function sortKeys(int $options = SORT_REGULAR, bool $descending = false): static;
 
     /**
+     * @link https://github.com/upside/collection#sortKeysDesc
+     *
      * @param int $options
      *
      * @return static
@@ -970,6 +836,8 @@ interface CollectionInterface extends Countable, ArrayAccess, IteratorAggregate
     public function sortKeysDesc(int $options = SORT_REGULAR): static;
 
     /**
+     * @link https://github.com/upside/collection#splice
+     *
      * @param int $offset
      * @param int|null $length
      * @param array $replacement
@@ -979,6 +847,8 @@ interface CollectionInterface extends Countable, ArrayAccess, IteratorAggregate
     public function splice(int $offset, ?int $length = null, array $replacement = []): static;
 
     /**
+     * @link https://github.com/upside/collection#split
+     *
      * @param int $numberOfGroups
      *
      * @return static
@@ -986,6 +856,8 @@ interface CollectionInterface extends Countable, ArrayAccess, IteratorAggregate
     public function split(int $numberOfGroups): static;
 
     /**
+     * @link https://github.com/upside/collection#splitIn
+     *
      * @param int $numberOfGroups
      *
      * @return static
@@ -993,6 +865,8 @@ interface CollectionInterface extends Countable, ArrayAccess, IteratorAggregate
     public function splitIn(int $numberOfGroups): static;
 
     /**
+     * @link https://github.com/upside/collection#sum
+     *
      * @param callable|int|string|null $key
      *
      * @return mixed
@@ -1000,6 +874,8 @@ interface CollectionInterface extends Countable, ArrayAccess, IteratorAggregate
     public function sum(callable|int|string|null $key = null): mixed;
 
     /**
+     * @link https://github.com/upside/collection#take
+     *
      * @param int $limit
      *
      * @return static
@@ -1007,6 +883,8 @@ interface CollectionInterface extends Countable, ArrayAccess, IteratorAggregate
     public function take(int $limit): static;
 
     /**
+     * @link https://github.com/upside/collection#takeUntil
+     *
      * @param mixed $value
      *
      * @return static
@@ -1014,6 +892,8 @@ interface CollectionInterface extends Countable, ArrayAccess, IteratorAggregate
     public function takeUntil(mixed $value): static;
 
     /**
+     * @link https://github.com/upside/collection#takeWhile
+     *
      * @param mixed $value
      *
      * @return static
@@ -1021,6 +901,8 @@ interface CollectionInterface extends Countable, ArrayAccess, IteratorAggregate
     public function takeWhile(mixed $value): static;
 
     /**
+     * @link https://github.com/upside/collection#tap
+     *
      * @param callable $callback
      *
      * @return static
@@ -1028,16 +910,22 @@ interface CollectionInterface extends Countable, ArrayAccess, IteratorAggregate
     public function tap(callable $callback): static;
 
     /**
+     * @link https://github.com/upside/collection#toArray
+     *
      * @return array
      */
     public function toArray(): array;
 
     /**
+     * @link https://github.com/upside/collection#toJson
+     *
      * @return string
      */
     public function toJson(): string;
 
     /**
+     * @link https://github.com/upside/collection#transform
+     *
      * @param callable $callback
      *
      * @return static
@@ -1045,6 +933,8 @@ interface CollectionInterface extends Countable, ArrayAccess, IteratorAggregate
     public function transform(callable $callback): static;
 
     /**
+     * @link https://github.com/upside/collection#union
+     *
      * @param CollectionInterface|array $items
      *
      * @return static
@@ -1052,6 +942,8 @@ interface CollectionInterface extends Countable, ArrayAccess, IteratorAggregate
     public function union(CollectionInterface|array $items): static;
 
     /**
+     * @link https://github.com/upside/collection#unique
+     *
      * @param int|string|callable|null $key
      * @param bool $strict
      *
@@ -1060,6 +952,8 @@ interface CollectionInterface extends Countable, ArrayAccess, IteratorAggregate
     public function unique(int|string|callable|null $key = null, bool $strict = false): static;
 
     /**
+     * @link https://github.com/upside/collection#uniqueStrict
+     *
      * @param callable|int|string|null $key
      *
      * @return static
@@ -1067,6 +961,8 @@ interface CollectionInterface extends Countable, ArrayAccess, IteratorAggregate
     public function uniqueStrict(callable|int|string|null $key = null): static;
 
     /**
+     * @link https://github.com/upside/collection#unless
+     *
      * @param bool $condition
      * @param callable $callback
      * @param callable|null $default
@@ -1076,6 +972,8 @@ interface CollectionInterface extends Countable, ArrayAccess, IteratorAggregate
     public function unless(bool $condition, callable $callback, callable|null $default = null): mixed;
 
     /**
+     * @link https://github.com/upside/collection#unlessEmpty
+     *
      * @param callable $callback
      * @param callable|null $default
      *
@@ -1084,6 +982,8 @@ interface CollectionInterface extends Countable, ArrayAccess, IteratorAggregate
     public function unlessEmpty(callable $callback, callable|null $default = null): mixed;
 
     /**
+     * @link https://github.com/upside/collection#unlessNotEmpty
+     *
      * @param callable $callback
      * @param callable|null $default
      *
@@ -1092,11 +992,15 @@ interface CollectionInterface extends Countable, ArrayAccess, IteratorAggregate
     public function unlessNotEmpty(callable $callback, callable|null $default = null): mixed;
 
     /**
+     * @link https://github.com/upside/collection#values
+     *
      * @return static
      */
     public function values(): static;
 
     /**
+     * @link https://github.com/upside/collection#when
+     *
      * @param bool $condition
      * @param callable $callback
      * @param callable|null $default
@@ -1106,6 +1010,8 @@ interface CollectionInterface extends Countable, ArrayAccess, IteratorAggregate
     public function when(bool $condition, callable $callback, callable|null $default = null): mixed;
 
     /**
+     * @link https://github.com/upside/collection#whenEmpty
+     *
      * @param callable $callback
      * @param callable|null $default
      *
@@ -1114,6 +1020,8 @@ interface CollectionInterface extends Countable, ArrayAccess, IteratorAggregate
     public function whenEmpty(callable $callback, callable|null $default = null): mixed;
 
     /**
+     * @link https://github.com/upside/collection#whenNotEmpty
+     *
      * @param callable $callback
      * @param callable|null $default
      *
@@ -1122,6 +1030,8 @@ interface CollectionInterface extends Countable, ArrayAccess, IteratorAggregate
     public function whenNotEmpty(callable $callback, callable|null $default = null): mixed;
 
     /**
+     * @link https://github.com/upside/collection#where
+     *
      * @param callable|int|string $key
      * @param Operator|null $operator
      * @param mixed $value
@@ -1131,6 +1041,8 @@ interface CollectionInterface extends Countable, ArrayAccess, IteratorAggregate
     public function where(callable|int|string $key, Operator|null $operator = null, mixed $value = null): static;
 
     /**
+     * @link https://github.com/upside/collection#whereStrict
+     *
      * @param callable|int|string $key
      * @param mixed $value
      *
@@ -1139,6 +1051,8 @@ interface CollectionInterface extends Countable, ArrayAccess, IteratorAggregate
     public function whereStrict(callable|int|string $key, mixed $value = null): static;
 
     /**
+     * @link https://github.com/upside/collection#whereBetween
+     *
      * @param callable|int|string $key
      * @param mixed $from
      * @param mixed $to
@@ -1148,6 +1062,8 @@ interface CollectionInterface extends Countable, ArrayAccess, IteratorAggregate
     public function whereBetween(callable|int|string $key, mixed $from, mixed $to): static;
 
     /**
+     * @link https://github.com/upside/collection#whereIn
+     *
      * @param callable|int|string $key
      * @param CollectionInterface|array $values
      * @param bool $strict
@@ -1157,6 +1073,8 @@ interface CollectionInterface extends Countable, ArrayAccess, IteratorAggregate
     public function whereIn(callable|int|string $key, CollectionInterface|array $values, bool $strict = false): static;
 
     /**
+     * @link https://github.com/upside/collection#whereInStrict
+     *
      * @param callable|int|string $key
      * @param array $values
      *
@@ -1165,6 +1083,8 @@ interface CollectionInterface extends Countable, ArrayAccess, IteratorAggregate
     public function whereInStrict(callable|int|string $key, array $values): static;
 
     /**
+     * @link https://github.com/upside/collection#whereInstanceOf
+     *
      * @param string|string[] $class
      *
      * @return static
@@ -1172,6 +1092,8 @@ interface CollectionInterface extends Countable, ArrayAccess, IteratorAggregate
     public function whereInstanceOf(array|string $class): static;
 
     /**
+     * @link https://github.com/upside/collection#whereNotBetween
+     *
      * @param callable|int|string $key
      * @param mixed $from
      * @param mixed $to
@@ -1181,6 +1103,8 @@ interface CollectionInterface extends Countable, ArrayAccess, IteratorAggregate
     public function whereNotBetween(callable|int|string $key, mixed $from, mixed $to): static;
 
     /**
+     * @link https://github.com/upside/collection#whereNotIn
+     *
      * @param callable|int|string $key
      * @param CollectionInterface|array $values
      * @param bool $strict
@@ -1190,6 +1114,8 @@ interface CollectionInterface extends Countable, ArrayAccess, IteratorAggregate
     public function whereNotIn(callable|int|string $key, CollectionInterface|array $values, bool $strict = false): static;
 
     /**
+     * @link https://github.com/upside/collection#whereNotInStrict
+     *
      * @param callable|int|string $key
      * @param CollectionInterface|array $values
      *
@@ -1198,6 +1124,8 @@ interface CollectionInterface extends Countable, ArrayAccess, IteratorAggregate
     public function whereNotInStrict(callable|int|string $key, CollectionInterface|array $values): static;
 
     /**
+     * @link https://github.com/upside/collection#whereNotNull
+     *
      * @param callable|int|string $key
      *
      * @return static
@@ -1205,6 +1133,8 @@ interface CollectionInterface extends Countable, ArrayAccess, IteratorAggregate
     public function whereNotNull(callable|int|string $key): static;
 
     /**
+     * @link https://github.com/upside/collection#whereNull
+     *
      * @param callable|int|string $key
      *
      * @return static
@@ -1212,6 +1142,8 @@ interface CollectionInterface extends Countable, ArrayAccess, IteratorAggregate
     public function whereNull(callable|int|string $key): static;
 
     /**
+     * @link https://github.com/upside/collection#zip
+     *
      * @param array ...$items
      *
      * @return static

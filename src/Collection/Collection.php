@@ -1511,8 +1511,6 @@ class Collection implements CollectionInterface
         return static::make(array_map(...$params));
     }
 
-
-
     /**
      * @inheritDoc
      */
@@ -1520,7 +1518,6 @@ class Collection implements CollectionInterface
     {
         return count($this->items);
     }
-
 
     /**
      * @inheritDoc
