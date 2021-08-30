@@ -72,7 +72,7 @@ class Collection implements CollectionInterface
      */
     public function chunkWhile(callable $callback): static
     {
-        return $this;
+        throw new Exception('In progress');
     }
 
     /**
@@ -129,7 +129,7 @@ class Collection implements CollectionInterface
         $retriever = $this->valueRetriever($key);
         $comparator = $this->duplicateComparator($strict);
         foreach ($this->items as $item) {
-            if ($comparator($retriever($item), $value)) {
+            if ($comparator($retriever($item), is_callable($value) ? $value($item) : $value)) {
                 return true;
             }
         }
@@ -1572,9 +1572,7 @@ class Collection implements CollectionInterface
      */
     protected function equality(mixed $value): callable
     {
-        return static function ($item) use ($value) {
-            return $item === $value;
-        };
+        return static fn($item) => $item === $value;
     }
 
     /**
@@ -1584,9 +1582,7 @@ class Collection implements CollectionInterface
      */
     protected function identity(): callable
     {
-        return static function ($value) {
-            return $value;
-        };
+        return static fn($value) => $value;
     }
 
     /**
@@ -1598,9 +1594,7 @@ class Collection implements CollectionInterface
      */
     protected function negate(callable $callback): callable
     {
-        return static function (...$params) use ($callback) {
-            return !$callback(...$params);
-        };
+        return static fn(...$params) => !$callback(...$params);
     }
 
     protected function operatorForWhere($key, Operator|null $operator, $value = true): callable
@@ -1650,14 +1644,6 @@ class Collection implements CollectionInterface
 
     protected function duplicateComparator(bool $strict = true): callable
     {
-        if ($strict) {
-            return static function ($a, $b) {
-                return $a === $b;
-            };
-        }
-
-        return static function ($a, $b) {
-            return $a == $b;
-        };
+        return $strict ? static fn($a, $b) => $a === $b : static fn($a, $b) => $a == $b;
     }
 }
