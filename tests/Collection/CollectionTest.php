@@ -13,7 +13,7 @@ class CollectionTest extends TestCase
     /**
      * TODO: Реализовать тест
      */
-    public function testMake()
+    public function testMake(): void
     {
         $this->assertSame(1, 1);
     }
@@ -26,7 +26,7 @@ class CollectionTest extends TestCase
     /**
      * @depends testMake
      */
-    public function testAll()
+    public function testAll(): void
     {
         $collection = Collection::make([1, 2, 3]);
         $this->assertSame([1, 2, 3], $collection->all());
@@ -34,9 +34,8 @@ class CollectionTest extends TestCase
 
     /**
      * @depends testMake
-     * @depends testAll
      */
-    public function testAvg()
+    public function testAvg(): void
     {
         $collection = Collection::make([1, 1, 2, 4]);
 
@@ -51,15 +50,13 @@ class CollectionTest extends TestCase
 
         $this->assertSame(20.0, $collection->avg('foo'));
         $this->assertSame(20.0, $collection->avg(fn($item) => $item['foo']));
-        $this->assertSame(20.0, $collection->avg(function ($item) { return $item['foo']; }));
 
     }
 
     /**
      * @depends testMake
-     * @depends testAll
      */
-    public function testAverage()
+    public function testAverage(): void
     {
         $collection = Collection::make([1, 1, 2, 4]);
 
@@ -74,14 +71,13 @@ class CollectionTest extends TestCase
 
         $this->assertSame(20.0, $collection->average('foo'));
         $this->assertSame(20.0, $collection->average(fn($item) => $item['foo']));
-        $this->assertSame(20.0, $collection->average(function ($item) { return $item['foo']; }));
     }
 
     /**
      * @depends testMake
      * @depends testToArray
      */
-    public function testChunk()
+    public function testChunk(): void
     {
         $collection = Collection::make([1, 2, 3, 4, 5, 6, 7]);
 
@@ -101,15 +97,13 @@ class CollectionTest extends TestCase
      * @depends testMake
      * @depends testToArray
      */
-    public function testChunkWhile()
+    public function testChunkWhile(): void
     {
         $this->markTestIncomplete('Отсутствует реализация');
 
         $collection = Collection::make(str_split('AABBCCCD'));
 
-        $chunks = $collection->chunkWhile(function ($value, $key, $chunk) {
-            return $value === $chunk->last();
-        });
+        $chunks = $collection->chunkWhile(fn($value, $key, $chunk) => $value === $chunk->last());
 
         $this->assertSame([['A', 'A'], ['B', 'B'], ['C', 'C', 'C'], ['D']], $chunks->toArray());
     }
@@ -118,7 +112,7 @@ class CollectionTest extends TestCase
      * @depends testMake
      * @depends testAll
      */
-    public function testCollapse()
+    public function testCollapse(): void
     {
         $collection = Collection::make([
             [1, 2, 3],
@@ -135,7 +129,7 @@ class CollectionTest extends TestCase
      * @depends testMake
      * @depends testAll
      */
-    public function testCollect()
+    public function testCollect(): void
     {
         $collectionA = Collection::make([1, 2, 3]);
 
@@ -148,7 +142,7 @@ class CollectionTest extends TestCase
      * @depends testMake
      * @depends testAll
      */
-    public function testCombine()
+    public function testCombine(): void
     {
         $collection = Collection::make(['name', 'age']);
 
@@ -161,7 +155,7 @@ class CollectionTest extends TestCase
      * @depends testMake
      * @depends testAll
      */
-    public function testConcat()
+    public function testConcat(): void
     {
         $this->markTestIncomplete('Реализация только на PHP 8.1 и выше + недоделана работа не с массивом а с коллекцией');
 
@@ -175,7 +169,7 @@ class CollectionTest extends TestCase
     /**
      * @depends testMake
      */
-    public function testContains()
+    public function testContains(): void
     {
         $collection = Collection::make([1, 2, 3, 4, 5]);
 
@@ -196,7 +190,7 @@ class CollectionTest extends TestCase
     /**
      * @depends testMake
      */
-    public function testContainsStrict()
+    public function testContainsStrict(): void
     {
         $collection = Collection::make([1, 2, 3, 4, 5]);
         $this->assertTrue($collection->containsStrict(3));
@@ -207,7 +201,7 @@ class CollectionTest extends TestCase
      * @depends testMake
      * @depends testAll
      */
-    public function testCountBy()
+    public function testCountBy(): void
     {
         $collection = Collection::make([1, 2, 2, 2, 3]);
 
@@ -215,9 +209,7 @@ class CollectionTest extends TestCase
 
         $collection = Collection::make(['alice@gmail.com', 'bob@yahoo.com', 'carlos@gmail.com']);
 
-        $counted = $collection->countBy(function ($email) {
-            return substr(strrchr($email, '@'), 1);
-        });
+        $counted = $collection->countBy(fn($email) => substr(strrchr($email, '@'), 1));
 
         $this->assertSame(['gmail.com' => 2, 'yahoo.com' => 1], $counted->all());
     }
@@ -226,7 +218,7 @@ class CollectionTest extends TestCase
      * @depends testMake
      * @depends testAll
      */
-    public function testCrossJoin()
+    public function testCrossJoin(): void
     {
         $collection = Collection::make([1, 2]);
 
@@ -265,7 +257,7 @@ class CollectionTest extends TestCase
      * @depends testMake
      * @depends testAll
      */
-    public function testDiff()
+    public function testDiff(): void
     {
         $collection = Collection::make([1, 2, 3, 4, 5]);
 
@@ -278,7 +270,7 @@ class CollectionTest extends TestCase
      * @depends testMake
      * @depends testAll
      */
-    public function testDiffAssoc()
+    public function testDiffAssoc(): void
     {
         $collection = Collection::make([
             'color' => 'orange',
@@ -300,7 +292,7 @@ class CollectionTest extends TestCase
      * @depends testMake
      * @depends testAll
      */
-    public function testDiffKeys()
+    public function testDiffKeys(): void
     {
         $collection = Collection::make([
             'one' => 10,
@@ -324,7 +316,7 @@ class CollectionTest extends TestCase
      * @depends testMake
      * @depends testAll
      */
-    public function testDuplicates()
+    public function testDuplicates(): void
     {
         $collection = Collection::make(['a', 'b', 'a', 'c', 'b']);
 
@@ -341,17 +333,17 @@ class CollectionTest extends TestCase
         $this->assertSame([2 => 'Developer'], $employees->duplicates('position')->all());
     }
 
-    public function testDuplicatesStrict()
+    public function testDuplicatesStrict(): void
     {
         $this->markTestIncomplete();
     }
 
-    public function testEach()
+    public function testEach(): void
     {
         $this->markTestIncomplete();
     }
 
-    public function testEachSpread()
+    public function testEachSpread(): void
     {
         $this->markTestIncomplete();
     }
@@ -359,26 +351,17 @@ class CollectionTest extends TestCase
     /**
      * @depends testMake
      */
-    public function testEvery()
+    public function testEvery(): void
     {
-        $result = Collection::make([1, 2, 3, 4])->every(function ($value, $key) {
-            return $value > 2;
-        });
-
-        $this->assertFalse($result);
-
-        $result = Collection::make([])->every(function ($value, $key) {
-            return $value > 2;
-        });
-
-        $this->assertTrue($result);
+        $this->assertFalse(Collection::make([1, 2, 3, 4])->every(fn($value, $key) => $value > 2));
+        $this->assertTrue(Collection::make([])->every(fn($value, $key) => $value > 2));
     }
 
     /**
      * @depends testMake
      * @depends testAll
      */
-    public function testExcept()
+    public function testExcept(): void
     {
         $collection = Collection::make(['product_id' => 1, 'price' => 100, 'discount' => false]);
 
@@ -391,15 +374,11 @@ class CollectionTest extends TestCase
      * @depends testMake
      * @depends testAll
      */
-    public function testFilter()
+    public function testFilter(): void
     {
         $collection = Collection::make([1, 2, 3, 4]);
 
-        $filtered = $collection->filter(function ($value, $key) {
-            return $value > 2;
-        });
-
-        $this->assertSame([2 => 3, 3 => 4], $filtered->all());
+        $this->assertSame([2 => 3, 3 => 4], $collection->filter(fn($value, $key) => $value > 2)->all());
 
         $collection = Collection::make([1, 2, 3, null, false, '', 0, []]);
 
@@ -409,17 +388,15 @@ class CollectionTest extends TestCase
     /**
      * @depends testMake
      */
-    public function testFirst()
+    public function testFirst(): void
     {
-        $result = Collection::make([1, 2, 3, 4])->first(function ($value, $key) {
-            return $value > 2;
-        });
+        $result = Collection::make([1, 2, 3, 4])->first(fn($value, $key) => $value > 2);
 
         $this->assertSame(3, $result);
         $this->assertSame(1, Collection::make([1, 2, 3, 4])->first());
     }
 
-    public function testFirstWhere()
+    public function testFirstWhere(): void
     {
         $this->markTestIncomplete();
     }
@@ -428,7 +405,7 @@ class CollectionTest extends TestCase
      * @depends testMake
      * @depends testAll
      */
-    public function testFlatMap()
+    public function testFlatMap(): void
     {
         $collection = Collection::make([
             ['name' => 'Sally'],
@@ -436,9 +413,7 @@ class CollectionTest extends TestCase
             ['age' => 28],
         ]);
 
-        $flattened = $collection->flatMap(function ($values) {
-            return array_map('strtoupper', $values);
-        });
+        $flattened = $collection->flatMap(fn($values) => array_map('strtoupper', $values));
 
         $this->assertSame(['name' => 'SALLY', 'school' => 'ARKANSAS', 'age' => '28'], $flattened->all());
     }
@@ -447,7 +422,7 @@ class CollectionTest extends TestCase
      * @depends testMake
      * @depends testAll
      */
-    public function testFlatten()
+    public function testFlatten(): void
     {
         $collection = Collection::make([
             'name' => 'taylor',
@@ -490,7 +465,7 @@ class CollectionTest extends TestCase
      * @depends testMake
      * @depends testAll
      */
-    public function testFlip()
+    public function testFlip(): void
     {
         $collection = Collection::make(['name' => 'taylor', 'framework' => 'laravel']);
 
@@ -501,7 +476,7 @@ class CollectionTest extends TestCase
      * @depends testMake
      * @depends testAll
      */
-    public function testForget()
+    public function testForget(): void
     {
         $collection = Collection::make(['name' => 'taylor', 'framework' => 'laravel']);
 
@@ -514,7 +489,7 @@ class CollectionTest extends TestCase
      * @depends testMake
      * @depends testAll
      */
-    public function testForPage()
+    public function testForPage(): void
     {
         $collection = Collection::make([1, 2, 3, 4, 5, 6, 7, 8, 9]);
 
@@ -526,7 +501,7 @@ class CollectionTest extends TestCase
     /**
      * @depends testMake
      */
-    public function testGet()
+    public function testGet(): void
     {
         $collection = Collection::make(['name' => 'taylor', 'framework' => 'laravel']);
 
@@ -539,7 +514,7 @@ class CollectionTest extends TestCase
      * @depends testMake
      * @depends testToArray
      */
-    public function testGroupBy()
+    public function testGroupBy(): void
     {
         $collection = Collection::make([
             ['account_id' => 'account-x10', 'product' => 'Chair'],
@@ -562,9 +537,7 @@ class CollectionTest extends TestCase
             $grouped->toArray()
         );
 
-        $grouped = $collection->groupBy(function ($item, $key) {
-            return substr($item['account_id'], -3);
-        });
+        $grouped = $collection->groupBy(fn($item, $key) => substr($item['account_id'], -3));
 
         $this->assertEquals(
             [
@@ -586,11 +559,7 @@ class CollectionTest extends TestCase
             40 => ['user' => 4, 'skill' => 2, 'roles' => ['Role_2']],
         ]);
 
-        $result = $data->groupBy([
-            'skill', function ($item) {
-                return $item['roles'];
-            },
-        ], true);
+        $result = $data->groupBy(['skill', fn($item) => $item['roles']], true);
 
         $this->assertEquals(
             [
@@ -622,7 +591,7 @@ class CollectionTest extends TestCase
     /**
      * @depends testMake
      */
-    public function testHas()
+    public function testHas(): void
     {
         $collection = Collection::make(['account_id' => 1, 'product' => 'Desk', 'amount' => 5]);
 
@@ -634,7 +603,7 @@ class CollectionTest extends TestCase
     /**
      * @depends testMake
      */
-    public function testImplode()
+    public function testImplode(): void
     {
         $collection = Collection::make([
             ['account_id' => 1, 'product' => 'Desk'],
@@ -649,7 +618,7 @@ class CollectionTest extends TestCase
      * @depends testMake
      * @depends testAll
      */
-    public function testIntersect()
+    public function testIntersect(): void
     {
         $collection = Collection::make(['Desk', 'Sofa', 'Chair']);
 
@@ -662,7 +631,7 @@ class CollectionTest extends TestCase
      * @depends testMake
      * @depends testAll
      */
-    public function testIntersectByKeys()
+    public function testIntersectByKeys(): void
     {
         $collection = Collection::make([
             'serial' => 'UX301', 'type' => 'screen', 'year' => 2009,
@@ -678,7 +647,7 @@ class CollectionTest extends TestCase
     /**
      * @depends testMake
      */
-    public function testIsEmpty()
+    public function testIsEmpty(): void
     {
         $this->assertTrue(Collection::make([])->isEmpty());
         $this->assertFalse(Collection::make([1])->isEmpty());
@@ -687,7 +656,7 @@ class CollectionTest extends TestCase
     /**
      * @depends testMake
      */
-    public function testIsNotEmpty()
+    public function testIsNotEmpty(): void
     {
         $this->assertFalse(Collection::make([])->isNotEmpty());
         $this->assertTrue(Collection::make([1])->isNotEmpty());
@@ -696,7 +665,7 @@ class CollectionTest extends TestCase
     /**
      * @depends testMake
      */
-    public function testJoin()
+    public function testJoin(): void
     {
         $this->assertSame('a, b, c', Collection::make(['a', 'b', 'c'])->join(', '));
         $this->assertSame('a, b, and c', Collection::make(['a', 'b', 'c'])->join(', ', ', and '));
@@ -709,7 +678,7 @@ class CollectionTest extends TestCase
      * @depends testMake
      * @depends testAll
      */
-    public function testKeyBy()
+    public function testKeyBy(): void
     {
         $collection = Collection::make([
             ['product_id' => 'prod-100', 'name' => 'Desk'],
@@ -742,7 +711,7 @@ class CollectionTest extends TestCase
      * @depends testMake
      * @depends testAll
      */
-    public function testKeys()
+    public function testKeys(): void
     {
         $collection = Collection::make([
             'prod-100' => ['product_id' => 'prod-100', 'name' => 'Desk'],
@@ -756,7 +725,7 @@ class CollectionTest extends TestCase
     /**
      * @depends testMake
      */
-    public function testLast()
+    public function testLast(): void
     {
         $collection = Collection::make([1, 2, 3, 4]);
 
@@ -767,272 +736,272 @@ class CollectionTest extends TestCase
     /**
      * @depends testMake
      */
-    public function testMap()
+    public function testMap(): void
     {
         $collection = Collection::make([1, 2, 3, 4, 5]);
 
         $this->assertSame([2, 4, 6, 8, 10], $collection->map(fn($item, $key) => $item * 2)->all());
     }
 
-    public function testMapInto()
+    public function testMapInto(): void
     {
 
         $this->markTestIncomplete();
     }
 
-    public function testMapSpread()
+    public function testMapSpread(): void
     {
         $this->markTestIncomplete();
     }
 
-    public function testMapToGroups()
+    public function testMapToGroups(): void
     {
         $this->markTestIncomplete();
     }
 
-    public function testMapToDictionary()
+    public function testMapToDictionary(): void
     {
         $this->markTestIncomplete();
     }
 
-    public function testMapWithKeys()
+    public function testMapWithKeys(): void
     {
         $this->markTestIncomplete();
     }
 
-    public function testMax()
+    public function testMax(): void
     {
         $this->markTestIncomplete();
     }
 
-    public function testMedian()
+    public function testMedian(): void
     {
         $this->markTestIncomplete();
     }
 
-    public function testMerge()
+    public function testMerge(): void
     {
         $this->markTestIncomplete();
     }
 
-    public function testMergeRecursive()
+    public function testMergeRecursive(): void
     {
         $this->markTestIncomplete();
     }
 
-    public function testMin()
+    public function testMin(): void
     {
         $this->markTestIncomplete();
     }
 
-    public function testMode()
+    public function testMode(): void
     {
         $this->markTestIncomplete();
     }
 
-    public function testNth()
+    public function testNth(): void
     {
         $this->markTestIncomplete();
     }
 
-    public function testOnly()
+    public function testOnly(): void
     {
         $this->markTestIncomplete();
     }
 
-    public function testPad()
+    public function testPad(): void
     {
         $this->markTestIncomplete();
     }
 
-    public function testPartition()
+    public function testPartition(): void
     {
         $this->markTestIncomplete();
     }
 
-    public function testPipe()
+    public function testPipe(): void
     {
         $this->markTestIncomplete();
     }
 
-    public function testPipeInto()
+    public function testPipeInto(): void
     {
         $this->markTestIncomplete();
     }
 
-    public function testPluck()
+    public function testPluck(): void
     {
         $this->markTestIncomplete();
     }
 
-    public function testPop()
+    public function testPop(): void
     {
         $this->markTestIncomplete();
     }
 
-    public function testPrepend()
-    {
-        $this->markTestIncomplete();
-
-    }
-
-    public function testPull()
-    {
-        $this->markTestIncomplete();
-    }
-
-    public function testPush()
+    public function testPrepend(): void
     {
         $this->markTestIncomplete();
 
     }
 
-    public function testPut()
+    public function testPull(): void
     {
         $this->markTestIncomplete();
     }
 
-    public function testRandom()
+    public function testPush(): void
+    {
+        $this->markTestIncomplete();
+
+    }
+
+    public function testPut(): void
     {
         $this->markTestIncomplete();
     }
 
-    public function testReduce()
+    public function testRandom(): void
     {
         $this->markTestIncomplete();
     }
 
-    public function testReject()
+    public function testReduce(): void
     {
         $this->markTestIncomplete();
     }
 
-    public function testReplace()
+    public function testReject(): void
     {
         $this->markTestIncomplete();
     }
 
-    public function testReplaceRecursive()
+    public function testReplace(): void
     {
         $this->markTestIncomplete();
     }
 
-    public function testReverse()
+    public function testReplaceRecursive(): void
     {
         $this->markTestIncomplete();
     }
 
-    public function testSearch()
+    public function testReverse(): void
     {
         $this->markTestIncomplete();
     }
 
-    public function testShift()
+    public function testSearch(): void
     {
         $this->markTestIncomplete();
     }
 
-    public function testShuffle()
+    public function testShift(): void
     {
         $this->markTestIncomplete();
     }
 
-    public function testSkip()
+    public function testShuffle(): void
     {
         $this->markTestIncomplete();
     }
 
-    public function testSkipUntil()
+    public function testSkip(): void
     {
         $this->markTestIncomplete();
     }
 
-    public function testSkipWhile()
+    public function testSkipUntil(): void
     {
         $this->markTestIncomplete();
     }
 
-    public function testSlice()
+    public function testSkipWhile(): void
     {
         $this->markTestIncomplete();
     }
 
-    public function testSole()
+    public function testSlice(): void
     {
         $this->markTestIncomplete();
     }
 
-    public function testSome()
+    public function testSole(): void
     {
         $this->markTestIncomplete();
     }
 
-    public function testSort()
+    public function testSome(): void
     {
         $this->markTestIncomplete();
     }
 
-    public function testSortBy()
+    public function testSort(): void
     {
         $this->markTestIncomplete();
     }
 
-    public function testSortByDesc()
+    public function testSortBy(): void
     {
         $this->markTestIncomplete();
     }
 
-    public function testSortDesc()
+    public function testSortByDesc(): void
     {
         $this->markTestIncomplete();
     }
 
-    public function testSortKeys()
+    public function testSortDesc(): void
     {
         $this->markTestIncomplete();
     }
 
-    public function testSortKeysDesc()
+    public function testSortKeys(): void
     {
         $this->markTestIncomplete();
     }
 
-    public function testSplice()
+    public function testSortKeysDesc(): void
     {
         $this->markTestIncomplete();
     }
 
-    public function testSplit()
+    public function testSplice(): void
     {
         $this->markTestIncomplete();
     }
 
-    public function testSplitIn()
+    public function testSplit(): void
     {
         $this->markTestIncomplete();
     }
 
-    public function testSum()
+    public function testSplitIn(): void
     {
         $this->markTestIncomplete();
     }
 
-    public function testTake()
+    public function testSum(): void
     {
         $this->markTestIncomplete();
     }
 
-    public function testTakeUntil()
+    public function testTake(): void
     {
         $this->markTestIncomplete();
     }
 
-    public function testTakeWhile()
+    public function testTakeUntil(): void
     {
         $this->markTestIncomplete();
     }
 
-    public function testTap()
+    public function testTakeWhile(): void
+    {
+        $this->markTestIncomplete();
+    }
+
+    public function testTap(): void
     {
         $this->markTestIncomplete();
     }
@@ -1040,129 +1009,129 @@ class CollectionTest extends TestCase
     /**
      * @depends testMake
      */
-    public function testToArray()
+    public function testToArray(): void
     {
         $collection = Collection::make(['name' => 'Desk', 'price' => 200]);
 
         $this->assertSame(['name' => 'Desk', 'price' => 200], $collection->toArray());
     }
 
-    public function testToJson()
+    public function testToJson(): void
     {
         $this->markTestIncomplete();
     }
 
-    public function testTransform()
+    public function testTransform(): void
     {
         $this->markTestIncomplete();
     }
 
-    public function testUnion()
+    public function testUnion(): void
     {
         $this->markTestIncomplete();
     }
 
-    public function testUnique()
+    public function testUnique(): void
     {
         $this->markTestIncomplete();
     }
 
-    public function testUniqueStrict()
+    public function testUniqueStrict(): void
     {
         $this->markTestIncomplete();
     }
 
-    public function testUnless()
+    public function testUnless(): void
     {
         $this->markTestIncomplete();
     }
 
-    public function testUnlessEmpty()
+    public function testUnlessEmpty(): void
     {
         $this->markTestIncomplete();
     }
 
-    public function testUnlessNotEmpty()
+    public function testUnlessNotEmpty(): void
     {
         $this->markTestIncomplete();
     }
 
-    public function testValues()
+    public function testValues(): void
     {
         $this->markTestIncomplete();
     }
 
-    public function testWhen()
+    public function testWhen(): void
     {
         $this->markTestIncomplete();
     }
 
-    public function testWhenEmpty()
+    public function testWhenEmpty(): void
     {
         $this->markTestIncomplete();
     }
 
-    public function testWhenNotEmpty()
+    public function testWhenNotEmpty(): void
     {
         $this->markTestIncomplete();
     }
 
-    public function testWhere()
+    public function testWhere(): void
     {
         $this->markTestIncomplete();
     }
 
-    public function testWhereStrict()
+    public function testWhereStrict(): void
     {
         $this->markTestIncomplete();
     }
 
-    public function testWhereBetween()
+    public function testWhereBetween(): void
     {
         $this->markTestIncomplete();
     }
 
-    public function testWhereIn()
+    public function testWhereIn(): void
     {
         $this->markTestIncomplete();
     }
 
-    public function testWhereInStrict()
+    public function testWhereInStrict(): void
     {
         $this->markTestIncomplete();
     }
 
-    public function testWhereInstanceOf()
+    public function testWhereInstanceOf(): void
     {
         $this->markTestIncomplete();
     }
 
-    public function testWhereNotBetween()
+    public function testWhereNotBetween(): void
     {
         $this->markTestIncomplete();
     }
 
-    public function testWhereNotIn()
+    public function testWhereNotIn(): void
     {
         $this->markTestIncomplete();
     }
 
-    public function testWhereNotInStrict()
+    public function testWhereNotInStrict(): void
     {
         $this->markTestIncomplete();
     }
 
-    public function testWhereNotNull()
+    public function testWhereNotNull(): void
     {
         $this->markTestIncomplete();
     }
 
-    public function testWhereNull()
+    public function testWhereNull(): void
     {
         $this->markTestIncomplete();
     }
 
-    public function testZip()
+    public function testZip(): void
     {
         $this->markTestIncomplete();
     }
@@ -1170,34 +1139,34 @@ class CollectionTest extends TestCase
     /**
      * @depends testMake
      */
-    public function testCount()
+    public function testCount(): void
     {
         $collection = Collection::make([1, 2, 3, 4]);
 
         $this->assertSame(4, $collection->count());
     }
 
-    public function testOffsetSet()
+    public function testOffsetSet(): void
     {
         $this->markTestIncomplete();
     }
 
-    public function testOffsetExists()
+    public function testOffsetExists(): void
     {
         $this->markTestIncomplete();
     }
 
-    public function testOffsetGet()
+    public function testOffsetGet(): void
     {
         $this->markTestIncomplete();
     }
 
-    public function testOffsetUnset()
+    public function testOffsetUnset(): void
     {
         $this->markTestIncomplete();
     }
 
-    public function testGetIterator()
+    public function testGetIterator(): void
     {
         $this->markTestIncomplete();
     }
