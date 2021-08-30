@@ -407,7 +407,7 @@ class Collection implements CollectionInterface
      */
     public function get(callable|int|string|null $key, mixed $default = null): mixed
     {
-        return $this->items[$key] ?? $default;
+        return $this->items[$key] ?? (is_callable($default) ? $default() : $default);
     }
 
     /**
@@ -457,7 +457,7 @@ class Collection implements CollectionInterface
     /**
      * @inheritDoc
      */
-    public function has(callable|int|string $key): bool
+    public function has(callable|array|int|string $key): bool
     {
         if (!is_array($key)) {
             $key = [$key];

@@ -356,24 +356,67 @@ class CollectionTest extends TestCase
         $this->markTestIncomplete();
     }
 
+    /**
+     * @depends testMake
+     */
     public function testEvery()
     {
-        $this->markTestIncomplete();
+        $result = Collection::make([1, 2, 3, 4])->every(function ($value, $key) {
+            return $value > 2;
+        });
+
+        $this->assertFalse($result);
+
+        $result = Collection::make([])->every(function ($value, $key) {
+            return $value > 2;
+        });
+
+        $this->assertTrue($result);
     }
 
+    /**
+     * @depends testMake
+     * @depends testAll
+     */
     public function testExcept()
     {
-        $this->markTestIncomplete();
+        $collection = Collection::make(['product_id' => 1, 'price' => 100, 'discount' => false]);
+
+        $filtered = $collection->except(['price', 'discount']);
+
+        $this->assertSame(['product_id' => 1], $filtered->all());
     }
 
+    /**
+     * @depends testMake
+     * @depends testAll
+     */
     public function testFilter()
     {
-        $this->markTestIncomplete();
+        $collection = Collection::make([1, 2, 3, 4]);
+
+        $filtered = $collection->filter(function ($value, $key) {
+            return $value > 2;
+        });
+
+        $this->assertSame([2 => 3, 3 => 4], $filtered->all());
+
+        $collection = Collection::make([1, 2, 3, null, false, '', 0, []]);
+
+        $this->assertSame([1, 2, 3], $collection->filter()->all());
     }
 
+    /**
+     * @depends testMake
+     */
     public function testFirst()
     {
-        $this->markTestIncomplete();
+        $result = Collection::make([1, 2, 3, 4])->first(function ($value, $key) {
+            return $value > 2;
+        });
+
+        $this->assertSame(3, $result);
+        $this->assertSame(1, Collection::make([1, 2, 3, 4])->first());
     }
 
     public function testFirstWhere()
@@ -381,107 +424,354 @@ class CollectionTest extends TestCase
         $this->markTestIncomplete();
     }
 
+    /**
+     * @depends testMake
+     * @depends testAll
+     */
     public function testFlatMap()
     {
-        $this->markTestIncomplete();
+        $collection = Collection::make([
+            ['name' => 'Sally'],
+            ['school' => 'Arkansas'],
+            ['age' => 28],
+        ]);
+
+        $flattened = $collection->flatMap(function ($values) {
+            return array_map('strtoupper', $values);
+        });
+
+        $this->assertSame(['name' => 'SALLY', 'school' => 'ARKANSAS', 'age' => '28'], $flattened->all());
     }
 
+    /**
+     * @depends testMake
+     * @depends testAll
+     */
     public function testFlatten()
     {
-        $this->markTestIncomplete();
+        $collection = Collection::make([
+            'name' => 'taylor',
+            'languages' => [
+                'php', 'javascript',
+            ],
+        ]);
+
+        $flattened = $collection->flatten();
+
+        $this->assertSame(['taylor', 'php', 'javascript'], $flattened->all());
+
+        $collection = Collection::make([
+            'Apple' => [
+                [
+                    'name' => 'iPhone 6S',
+                    'brand' => 'Apple',
+                ],
+            ],
+            'Samsung' => [
+                [
+                    'name' => 'Galaxy S7',
+                    'brand' => 'Samsung',
+                ],
+            ],
+        ]);
+
+        $products = $collection->flatten(1);
+
+        $this->assertSame(
+            [
+                ['name' => 'iPhone 6S', 'brand' => 'Apple'],
+                ['name' => 'Galaxy S7', 'brand' => 'Samsung'],
+            ],
+            $products->values()->all()
+        );
     }
 
+    /**
+     * @depends testMake
+     * @depends testAll
+     */
     public function testFlip()
     {
-        $this->markTestIncomplete();
+        $collection = Collection::make(['name' => 'taylor', 'framework' => 'laravel']);
+
+        $this->assertSame(['taylor' => 'name', 'laravel' => 'framework'], $collection->flip()->all());
     }
 
+    /**
+     * @depends testMake
+     * @depends testAll
+     */
     public function testForget()
     {
-        $this->markTestIncomplete();
+        $collection = Collection::make(['name' => 'taylor', 'framework' => 'laravel']);
+
+        $collection->forget('name');
+
+        $this->assertSame(['framework' => 'laravel'], $collection->all());
     }
 
+    /**
+     * @depends testMake
+     * @depends testAll
+     */
     public function testForPage()
     {
-        $this->markTestIncomplete();
+        $collection = Collection::make([1, 2, 3, 4, 5, 6, 7, 8, 9]);
 
+        $chunk = $collection->forPage(2, 3);
+
+        $this->assertSame([4, 5, 6], $chunk->all());
     }
 
+    /**
+     * @depends testMake
+     */
     public function testGet()
     {
-        $this->markTestIncomplete();
+        $collection = Collection::make(['name' => 'taylor', 'framework' => 'laravel']);
 
+        $this->assertSame('taylor', $collection->get('name'));
+        $this->assertSame(34, $collection->get('age', 34));
+        $this->assertSame('taylor@example.com', $collection->get('email', fn() => 'taylor@example.com'));
     }
 
+    /**
+     * @depends testMake
+     * @depends testToArray
+     */
     public function testGroupBy()
     {
-        $this->markTestIncomplete();
+        $collection = Collection::make([
+            ['account_id' => 'account-x10', 'product' => 'Chair'],
+            ['account_id' => 'account-x10', 'product' => 'Bookcase'],
+            ['account_id' => 'account-x11', 'product' => 'Desk'],
+        ]);
 
+        $grouped = $collection->groupBy('account_id');
+
+        $this->assertEquals(
+            [
+                'account-x10' => [
+                    ['account_id' => 'account-x10', 'product' => 'Chair'],
+                    ['account_id' => 'account-x10', 'product' => 'Bookcase'],
+                ],
+                'account-x11' => [
+                    ['account_id' => 'account-x11', 'product' => 'Desk'],
+                ],
+            ],
+            $grouped->toArray()
+        );
+
+        $grouped = $collection->groupBy(function ($item, $key) {
+            return substr($item['account_id'], -3);
+        });
+
+        $this->assertEquals(
+            [
+                'x10' => [
+                    ['account_id' => 'account-x10', 'product' => 'Chair'],
+                    ['account_id' => 'account-x10', 'product' => 'Bookcase'],
+                ],
+                'x11' => [
+                    ['account_id' => 'account-x11', 'product' => 'Desk'],
+                ],
+            ],
+            $grouped->toArray()
+        );
+
+        $data = new Collection([
+            10 => ['user' => 1, 'skill' => 1, 'roles' => ['Role_1', 'Role_3']],
+            20 => ['user' => 2, 'skill' => 1, 'roles' => ['Role_1', 'Role_2']],
+            30 => ['user' => 3, 'skill' => 2, 'roles' => ['Role_1']],
+            40 => ['user' => 4, 'skill' => 2, 'roles' => ['Role_2']],
+        ]);
+
+        $result = $data->groupBy([
+            'skill', function ($item) {
+                return $item['roles'];
+            },
+        ], true);
+
+        $this->assertEquals(
+            [
+                1 => [
+                    'Role_1' => [
+                        10 => ['user' => 1, 'skill' => 1, 'roles' => ['Role_1', 'Role_3']],
+                        20 => ['user' => 2, 'skill' => 1, 'roles' => ['Role_1', 'Role_2']],
+                    ],
+                    'Role_2' => [
+                        20 => ['user' => 2, 'skill' => 1, 'roles' => ['Role_1', 'Role_2']],
+                    ],
+                    'Role_3' => [
+                        10 => ['user' => 1, 'skill' => 1, 'roles' => ['Role_1', 'Role_3']],
+                    ],
+                ],
+                2 => [
+                    'Role_1' => [
+                        30 => ['user' => 3, 'skill' => 2, 'roles' => ['Role_1']],
+                    ],
+                    'Role_2' => [
+                        40 => ['user' => 4, 'skill' => 2, 'roles' => ['Role_2']],
+                    ],
+                ],
+            ],
+            $result->toArray()
+        );
     }
 
+    /**
+     * @depends testMake
+     */
     public function testHas()
     {
-        $this->markTestIncomplete();
+        $collection = Collection::make(['account_id' => 1, 'product' => 'Desk', 'amount' => 5]);
 
+        $this->assertTrue($collection->has('product'));
+        $this->assertTrue($collection->has(['product', 'amount']));
+        $this->assertFalse($collection->has(['amount', 'price']));
     }
 
+    /**
+     * @depends testMake
+     */
     public function testImplode()
     {
-        $this->markTestIncomplete();
+        $collection = Collection::make([
+            ['account_id' => 1, 'product' => 'Desk'],
+            ['account_id' => 2, 'product' => 'Chair'],
+        ]);
 
+        $this->assertSame('Desk, Chair', $collection->implode(', ', 'product'));
+        $this->assertSame('1-2-3-4-5', Collection::make([1, 2, 3, 4, 5])->implode('-'));
     }
 
+    /**
+     * @depends testMake
+     * @depends testAll
+     */
     public function testIntersect()
     {
-        $this->markTestIncomplete();
+        $collection = Collection::make(['Desk', 'Sofa', 'Chair']);
 
+        $intersect = $collection->intersect(['Desk', 'Chair', 'Bookcase']);
+
+        $this->assertSame([0 => 'Desk', 2 => 'Chair'], $intersect->all());
     }
 
+    /**
+     * @depends testMake
+     * @depends testAll
+     */
     public function testIntersectByKeys()
     {
-        $this->markTestIncomplete();
+        $collection = Collection::make([
+            'serial' => 'UX301', 'type' => 'screen', 'year' => 2009,
+        ]);
 
+        $intersect = $collection->intersectByKeys([
+            'reference' => 'UX404', 'type' => 'tab', 'year' => 2011,
+        ]);
+
+        $this->assertSame(['type' => 'screen', 'year' => 2009], $intersect->all());
     }
 
+    /**
+     * @depends testMake
+     */
     public function testIsEmpty()
     {
-        $this->markTestIncomplete();
-
+        $this->assertTrue(Collection::make([])->isEmpty());
+        $this->assertFalse(Collection::make([1])->isEmpty());
     }
 
+    /**
+     * @depends testMake
+     */
     public function testIsNotEmpty()
     {
-        $this->markTestIncomplete();
-
+        $this->assertFalse(Collection::make([])->isNotEmpty());
+        $this->assertTrue(Collection::make([1])->isNotEmpty());
     }
 
+    /**
+     * @depends testMake
+     */
     public function testJoin()
     {
-        $this->markTestIncomplete();
-
+        $this->assertSame('a, b, c', Collection::make(['a', 'b', 'c'])->join(', '));
+        $this->assertSame('a, b, and c', Collection::make(['a', 'b', 'c'])->join(', ', ', and '));
+        $this->assertSame('a and b', Collection::make(['a', 'b'])->join(', ', ' and '));
+        $this->assertSame('a', Collection::make(['a'])->join(', ', ' and '));
+        $this->assertSame('', Collection::make([])->join(', ', ' and '));
     }
 
+    /**
+     * @depends testMake
+     * @depends testAll
+     */
     public function testKeyBy()
     {
-        $this->markTestIncomplete();
+        $collection = Collection::make([
+            ['product_id' => 'prod-100', 'name' => 'Desk'],
+            ['product_id' => 'prod-200', 'name' => 'Chair'],
+        ]);
+
+        $keyed = $collection->keyBy('product_id');
+
+        $this->assertSame(
+            [
+                'prod-100' => ['product_id' => 'prod-100', 'name' => 'Desk'],
+                'prod-200' => ['product_id' => 'prod-200', 'name' => 'Chair'],
+            ],
+            $keyed->all()
+        );
+
+        $keyed = $collection->keyBy(fn($item) => strtoupper($item['product_id']));
+
+        $this->assertSame(
+            [
+                'PROD-100' => ['product_id' => 'prod-100', 'name' => 'Desk'],
+                'PROD-200' => ['product_id' => 'prod-200', 'name' => 'Chair'],
+            ],
+            $keyed->all()
+        );
 
     }
 
+    /**
+     * @depends testMake
+     * @depends testAll
+     */
     public function testKeys()
     {
+        $collection = Collection::make([
+            'prod-100' => ['product_id' => 'prod-100', 'name' => 'Desk'],
+            'prod-200' => ['product_id' => 'prod-200', 'name' => 'Chair'],
+        ]);
 
-        $this->markTestIncomplete();
+        $keys = $collection->keys();
+        $this->assertSame(['prod-100', 'prod-200'], $keys->all());
     }
 
+    /**
+     * @depends testMake
+     */
     public function testLast()
     {
-        $this->markTestIncomplete();
+        $collection = Collection::make([1, 2, 3, 4]);
+
+        $this->assertSame(2, $collection->last(fn($value, $key) => $value < 3));
+        $this->assertSame(4, $collection->last());
     }
 
+    /**
+     * @depends testMake
+     */
     public function testMap()
     {
-        $this->markTestIncomplete();
+        $collection = Collection::make([1, 2, 3, 4, 5]);
 
+        $this->assertSame([2, 4, 6, 8, 10], $collection->map(fn($item, $key) => $item * 2)->all());
     }
 
     public function testMapInto()

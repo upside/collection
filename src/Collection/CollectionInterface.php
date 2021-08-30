@@ -340,11 +340,11 @@ interface CollectionInterface extends Countable, ArrayAccess, IteratorAggregate
     /**
      * @link https://github.com/upside/collection#has
      *
-     * @param callable|int|string $key
+     * @param callable|array|int|string $key
      *
      * @return bool
      */
-    public function has(callable|int|string $key): bool;
+    public function has(callable|array|int|string $key): bool;
 
     /**
      * @link https://github.com/upside/collection#implode
