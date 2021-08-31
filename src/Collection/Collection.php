@@ -981,9 +981,18 @@ class Collection implements CollectionInterface
     /**
      * @inheritDoc
      */
-    public function shift(): mixed
+    public function shift(int $items = 1): mixed
     {
-        return array_shift($this->items);
+        if ($items === 1) {
+            return array_shift($this->items);
+        }
+
+        $result = static::make();
+        while ($result->count() < $items) {
+            $result->push(array_shift($this->items));
+        }
+
+        return $result;
     }
 
     /**
@@ -994,6 +1003,14 @@ class Collection implements CollectionInterface
         shuffle($this->items);
 
         return $this;
+    }
+
+    /**
+     * @inheritDoc
+     */
+    public function sliding(): static
+    {
+        throw new Exception('not implemented');
     }
 
     /**

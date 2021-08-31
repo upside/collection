@@ -708,16 +708,23 @@ interface CollectionInterface extends Countable, ArrayAccess, IteratorAggregate
     /**
      * @link https://github.com/upside/collection#shift
      *
+     * @param int $items
+     *
      * @return mixed
      */
-    public function shift(): mixed;
+    public function shift(int $items = 1): mixed;
 
     /**
      * @link https://github.com/upside/collection#shuffle
      *
-     * @return self
+     * @return static
      */
-    public function shuffle(): self;
+    public function shuffle(): static;
+
+    /**
+     * @return static
+     */
+    public function sliding(): static;
 
     /**
      * @link https://github.com/upside/collection#skip
